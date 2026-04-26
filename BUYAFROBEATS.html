@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BUYAFROBEATS — exclusive beat auctions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: oklch(0.16 0.012 65);
+    --bg-2: oklch(0.20 0.013 65);
+    --bg-3: oklch(0.24 0.014 65);
+    --line: oklch(0.30 0.012 65);
+    --ink: oklch(0.96 0.012 85);
+    --ink-dim: oklch(0.72 0.014 75);
+    --ink-mute: oklch(0.55 0.012 70);
+    --accent: oklch(0.80 0.17 65);
+    --accent-ink: oklch(0.18 0.02 60);
+    --danger: oklch(0.70 0.18 28);
+    --ok: oklch(0.80 0.16 150);
+    --hot: oklch(0.72 0.20 32);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--bg); color: var(--ink); font-family: 'Space Grotesk', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  .topbar { position: sticky; top: 0; z-index: 40; background: color-mix(in oklab, var(--bg) 85%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .topbar-inner { max-width: 1500px; margin: 0 auto; display: flex; align-items: center; gap: 20px; padding: 14px 28px; }
+  .logo { display: flex; align-items: baseline; gap: 8px; font-weight: 700; letter-spacing: -0.02em; font-size: 20px; }
+  .logo .dot { width:10px; height:10px; border-radius:50%; background: var(--accent); display:inline-block; transform: translateY(1px); animation: livePulse 1.6s ease-in-out infinite; }
+  .logo .sub { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); margin-left: 6px; }
+  .tabs { display:flex; gap: 4px; margin-left: 20px; }
+  .tab { font: inherit; font-size: 13px; color: var(--ink-dim); background: transparent; border: 1px solid transparent; border-radius: 999px; padding: 7px 14px; cursor: pointer; letter-spacing: -0.01em; }
+  .tab:hover { color: var(--ink); }
+  .tab.is-active { color: var(--ink); background: var(--bg-3); border-color: var(--line); }
+  .tab.admin { color: var(--accent); }
+  .spacer { flex: 1; }
+  .counter { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; display: inline-flex; gap: 8px; align-items: center; }
+  .counter b { color: var(--ink); font-weight: 500; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); animation: livePulse 1.6s ease-in-out infinite; display: inline-block; }
+  @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .btn { font: inherit; font-size: 13px; font-weight: 500; border-radius: 999px; padding: 9px 16px; cursor: pointer; border: 1px solid var(--line); background: var(--bg-2); color: var(--ink); transition: background .15s, border-color .15s, transform .05s; }
+  .btn:hover { background: var(--bg-3); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn-primary:hover { background: oklch(0.84 0.17 65); }
+  .btn-ghost { background: transparent; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .page { max-width: 1500px; margin: 0 auto; padding: 32px 28px 80px; }
+  .layout { display: grid; grid-template-columns: 1fr 340px; gap: 28px; align-items: start; }
+
+  .hero { padding: 14px 0 32px; border-bottom: 1px solid var(--line); margin-bottom: 28px; }
+  .hero .eyebrow { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 14px; display:flex; align-items:center; gap: 8px; }
+  .hero .eyebrow .live-dot { background: var(--accent); }
+  .hero h1 { font-size: clamp(42px, 5.5vw, 68px); line-height: 0.95; letter-spacing: -0.035em; margin: 0 0 18px; font-weight: 700; text-wrap: balance; max-width: 14ch; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { color: var(--ink-dim); font-size: 16px; max-width: 56ch; line-height: 1.55; margin: 0 0 20px; }
+  .hero-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat-pill { border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; display: inline-flex; gap: 10px; align-items: baseline; background: var(--bg-2); }
+  .stat-pill .k { font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-pill .v { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .stat-pill .v.accent { color: var(--accent); }
+
+  .filter-row { display:flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+  .search { flex: 1; min-width: 240px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 999px; padding: 10px 16px; background: var(--bg-2); }
+  .search input { flex: 1; background: transparent; border: 0; outline: 0; color: var(--ink); font: inherit; font-size: 14px; }
+  .search input::placeholder { color: var(--ink-mute); }
+  .chip { font-family:'JetBrains Mono', monospace; font-size: 11px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-2); color: var(--ink-dim); cursor: pointer; }
+  .chip:hover { color: var(--ink); }
+  .chip.is-active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+  .card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; transition: border-color .15s, transform .2s; animation: cardIn .3s ease both; position: relative; }
+  .card:hover { border-color: color-mix(in oklab, var(--accent) 40%, var(--line)); }
+  .card.is-playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .card.is-hot { border-color: color-mix(in oklab, var(--hot) 60%, var(--line)); }
+  .card.is-hot:hover { border-color: var(--hot); }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes cardOut { to { opacity: 0; transform: scale(0.94) translateY(-4px); filter: blur(4px); } }
+  .card.is-leaving { animation: cardOut .55s ease forwards; pointer-events: none; }
+
+  .cover { position: relative; aspect-ratio: 1/1; background: var(--bg-3); overflow: hidden; }
+  .cover .stripes { position: absolute; inset: 0; }
+  .cover .label { position: absolute; left: 12px; bottom: 12px; font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--ink); background: color-mix(in oklab, var(--bg) 70%, transparent); padding: 4px 8px; border-radius: 999px; backdrop-filter: blur(6px); letter-spacing: 0.06em; text-transform: uppercase; }
+  .cover .play { position: absolute; right: 14px; bottom: 14px; width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display:flex; align-items:center; justify-content:center; border: 0; cursor: pointer; box-shadow: 0 6px 20px -6px rgba(0,0,0,0.6); transition: transform .12s; }
+  .cover .play:hover { transform: scale(1.06); }
+
+  .status { position: absolute; top: 12px; left: 12px; font-family:'JetBrains Mono', monospace; font-size: 10px; padding: 4px 9px; border-radius: 999px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; backdrop-filter: blur(6px); }
+  .status.open { background: color-mix(in oklab, var(--ink) 80%, transparent); color: var(--bg); }
+  .status.live { background: var(--accent); color: var(--accent-ink); }
+  .status.hot { background: var(--hot); color: #fff; animation: hotPulse 1.2s ease-in-out infinite; }
+  .status.ending { background: var(--danger); color: #fff; animation: hotPulse 0.8s ease-in-out infinite; }
+  @keyframes hotPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 40%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; } }
+
+  .card-body { padding: 14px 16px 16px; display:flex; flex-direction:column; gap: 10px; }
+  .title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
+  .producer { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+
+  .auction-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+  .auction-row .k { font-family:'JetBrains Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-mute); }
+  .auction-row .v { font-family:'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin-top: 2px; }
+  .auction-row .v.accent { color: var(--accent); }
+  .auction-row .v.danger { color: var(--danger); }
+
+  .card-actions { display:flex; gap: 8px; align-items: center; margin-top: 2px; }
+  .bidstats { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); flex: 1; }
+  .bidstats b { color: var(--ink); font-weight: 500; }
+
+  .wave { height: 32px; display: flex; align-items: center; gap: 2px; }
+  .wave .bar { flex: 1; background: var(--ink-mute); border-radius: 2px; opacity: 0.45; transition: opacity .2s, background .2s; }
+  .card.is-playing .wave .bar { background: var(--accent); opacity: 0.9; animation: eq 0.8s ease-in-out infinite alternate; }
+  .card.is-playing .wave .bar:nth-child(3n) { animation-delay: 0.1s; }
+  .card.is-playing .wave .bar:nth-child(3n+1) { animation-delay: 0.25s; }
+  @keyframes eq { to { transform: scaleY(1.4); } }
+
+  .leaderboard { position: sticky; top: 86px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 10px; max-height: calc(100vh - 120px); overflow-y: auto; }
+  .lb-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .lb-head h3 { margin: 0; font-size: 14px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+  .lb-head .hint { font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); }
+  .lb-item { display: grid; grid-template-columns: 26px 40px 1fr auto; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .15s; }
+  .lb-item:last-child { border-bottom: 0; }
+  .lb-item:hover { background: color-mix(in oklab, var(--bg-3) 60%, transparent); border-radius: 8px; }
+  .lb-item.is-bumped { animation: bump .8s ease; }
+  @keyframes bump { 0% { background: color-mix(in oklab, var(--accent) 25%, transparent); } 100% { background: transparent; } }
+  .lb-rank { font-family:'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: var(--ink-mute); text-align: center; }
+  .lb-item:nth-child(2) .lb-rank { color: var(--accent); }
+  .lb-cover { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--bg-3); position: relative; }
+  .lb-info { min-width: 0; }
+  .lb-title { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-sub { font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); margin-top: 2px; display: flex; gap: 6px; align-items: center; }
+  .lb-sub .flame { color: var(--hot); }
+  .lb-bid { text-align: right; }
+  .lb-bid .amt { font-family:'JetBrains Mono', monospace; font-weight: 600; font-size: 13px; color: var(--accent); }
+  .lb-bid .t { font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); margin-top: 2px; }
+  .lb-bid .t.urgent { color: var(--danger); }
+  .lb-empty { text-align: center; padding: 24px 10px; color: var(--ink-mute); font-size: 12px; }
+  .lb-activity { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .lb-activity h4 { font-family:'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--ink-mute); margin: 0 0 10px; text-transform: uppercase; }
+  .activity-item { font-size: 12px; color: var(--ink-dim); margin-bottom: 6px; display: flex; gap: 8px; align-items: flex-start; animation: activityIn .3s ease; }
+  @keyframes activityIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .activity-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 7px; flex-shrink: 0; }
+  .activity-item b { color: var(--ink); font-weight: 500; }
+
+  .empty { border: 1px dashed var(--line); border-radius: 18px; padding: 60px 20px; text-align:center; color: var(--ink-dim); }
+  .empty h3 { color: var(--ink); font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .empty p { margin: 0; font-size: 14px; }
+
+  .panel { max-width: 760px; margin: 0 auto; background: var(--bg-2); border: 1px solid var(--line); border-radius: 20px; padding: 28px 32px; }
+  .panel h2 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.02em; }
+  .panel .lead { color: var(--ink-dim); margin: 0 0 24px; font-size: 14px; }
+  .admin-banner { display: inline-flex; align-items: center; gap: 8px; font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); background: color-mix(in oklab, var(--accent) 12%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--line)); padding: 5px 10px; border-radius: 999px; margin-bottom: 16px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .field { margin-bottom: 16px; display:flex; flex-direction: column; gap: 6px; }
+  .field label { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.08em; }
+  .field input, .field select, .field textarea { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; color: var(--ink); font: inherit; font-size: 14px; outline: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .row2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .drop { border: 1.5px dashed var(--line); border-radius: 14px; padding: 24px; text-align:center; cursor: pointer; transition: border-color .15s, background .15s; }
+  .drop:hover, .drop.is-over { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 6%, transparent); }
+  .drop input { display:none; }
+  .drop .big { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+  .drop .small { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); margin-top: 6px; }
+  .drop.has-file { border-style: solid; text-align: left; }
+  .drop .filename { color: var(--accent); font-family:'JetBrains Mono', monospace; font-size: 12px; }
+  .actions { display:flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+  .backdrop { position: fixed; inset: 0; background: color-mix(in oklab, var(--bg) 70%, black 30%); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal { background: var(--bg-2); border: 1px solid var(--line); border-radius: 20px; width: 100%; max-width: 560px; padding: 28px 28px 24px; animation: modalIn .25s cubic-bezier(0.2, 0.9, 0.3, 1.2); max-height: 90vh; overflow-y: auto; }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }
+  .modal h3 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.02em; }
+  .modal .lead { color: var(--ink-dim); font-size: 13px; margin: 0 0 20px; }
+  .line-item { display: flex; gap: 14px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 18px; background: var(--bg); }
+  .line-item .mini-cover { width: 54px; height: 54px; border-radius: 8px; overflow: hidden; background: var(--bg-3); position: relative; flex-shrink: 0; }
+  .line-item .t { font-weight: 600; letter-spacing: -0.01em; }
+  .line-item .s { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+  .line-item .amt { margin-left: auto; text-align: right; }
+  .line-item .amt .big { font-family:'JetBrains Mono', monospace; font-weight: 600; font-size: 18px; color: var(--accent); }
+  .line-item .amt .sml { font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); }
+
+  .timer-block { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); margin-bottom: 18px; }
+  .timer-block .tnum { font-family:'JetBrains Mono', monospace; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; color: var(--accent); }
+  .timer-block.urgent .tnum { color: var(--danger); }
+  .timer-block .tlabel { font-family:'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-mute); }
+
+  .bid-quick { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .bid-quick button { flex: 1; min-width: 80px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); padding: 10px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; transition: border-color .15s, background .15s; }
+  .bid-quick button:hover { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, var(--bg)); }
+  .bid-quick button.is-active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  .bid-history { max-height: 140px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+  .bid-history-row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--line); font-size: 12px; }
+  .bid-history-row:last-child { border-bottom: 0; }
+  .bid-history-row.is-top { background: color-mix(in oklab, var(--accent) 10%, transparent); }
+  .bid-history-row .bidder { font-family: 'JetBrains Mono', monospace; color: var(--ink-dim); }
+  .bid-history-row .amt { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--ink); }
+  .bid-history-row.is-top .amt { color: var(--accent); }
+  .bid-history-row .time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); }
+
+  .email-card { background: #fafaf7; color: #1a1815; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin-top: 8px; animation: emailIn .35s ease; }
+  @keyframes emailIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .email-head { background: #f1efe9; padding: 12px 16px; font-family:'JetBrains Mono', monospace; font-size: 11px; color: #5b574e; display: flex; justify-content: space-between; border-bottom: 1px solid #e4e1d8; }
+  .email-head .pill { background: #d9f2df; color: #1c6a36; padding: 2px 8px; border-radius: 999px; font-weight: 600; letter-spacing: 0.02em; }
+  .email-body { padding: 22px 22px 20px; }
+  .email-body .brand { font-weight: 700; letter-spacing: -0.01em; display:flex; align-items:center; gap: 8px; }
+  .email-body .brand .d { width: 8px; height: 8px; border-radius: 50%; background: oklch(0.72 0.18 65); display: inline-block; }
+  .email-body h4 { margin: 16px 0 6px; font-size: 20px; letter-spacing: -0.01em; font-weight: 700; color: #1a1815; }
+  .email-body p { margin: 0 0 12px; font-size: 14px; line-height: 1.55; color: #433f37; }
+  .email-body .download { display: inline-flex; align-items: center; gap: 8px; background: #1a1815; color: #fafaf7; text-decoration: none; padding: 11px 18px; border-radius: 10px; font-weight: 600; font-size: 13px; font-family: 'Space Grotesk', sans-serif; margin: 6px 0 10px; }
+  .email-body .fine { font-family:'JetBrains Mono', monospace; font-size: 10.5px; color: #7a756b; margin-top: 14px; line-height: 1.5; }
+
+  .log-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .log-table th, .log-table td { padding: 12px 16px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--line); }
+  .log-table tr:last-child td { border-bottom: 0; }
+  .log-table th { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; background: var(--bg-3); }
+  .log-table td.num { font-family:'JetBrains Mono', monospace; }
+  .log-table tr.row-new { animation: rowFlash 1.2s ease; }
+  @keyframes rowFlash { 0% { background: color-mix(in oklab, var(--accent) 20%, transparent); } 100% { background: transparent; } }
+
+  .toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 13px; min-width: 280px; max-width: 360px; display: flex; align-items: center; gap: 10px; animation: toastIn .25s ease; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.6); }
+  .toast .tdot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+  .toast.hot .tdot { background: var(--hot); }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 10px; }
+
+  @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } .leaderboard { position: static; max-height: none; order: -1; } }
+  @media (max-width: 700px) { .topbar-inner { padding: 12px 16px; gap: 10px; flex-wrap: wrap; } .page { padding: 24px 16px 100px; } .row2, .row3 { grid-template-columns: 1fr; } .hero h1 { font-size: 36px; } }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+const AUCTION_MS = 30 * 60 * 1000;
+const ANTISNIPE_MS = 2 * 60 * 1000;
+const ANTISNIPE_EXTEND_MS = 2 * 60 * 1000;
+const MIN_INCREMENT = 5;
+const BOT_TICK_MS = 4000;
+
+const LS = { beats: 'baf.auction.beats.v3', sold: 'baf.auction.sold.v3', tab: 'baf.auction.tab.v3', me: 'baf.auction.me.v3' };
+const load = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch { return fb; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+const fmt$ = (n) => '$' + Number(n).toFixed(2);
+const uid = () => Math.random().toString(36).slice(2, 9);
+const shortDate = (ts) => { const d = new Date(ts); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); };
+const fmtTime = (ms) => { if (ms <= 0) return '00:00'; const total = Math.floor(ms/1000); const m = Math.floor(total/60); const s = total % 60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; };
+const hash = (s) => { let h = 2166136261; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = (h*16777619) >>> 0; } return h; };
+
+const CoverArt = ({ seed, label }) => {
+  const h = hash(seed || 'x');
+  const hue1 = h % 360; const hue2 = (h*7) % 360; const angle = (h%180) - 90;
+  const sc = 4 + (h % 4);
+  const stripes = Array.from({length: sc}).map((_,i) => ({ off: (i/sc)*100, w: 100/sc, key: i }));
+  return (
+    <svg className="stripes" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id={`g-${seed}`} gradientTransform={`rotate(${angle})`}><stop offset="0%" stopColor={`oklch(0.30 0.08 ${hue1})`} /><stop offset="100%" stopColor={`oklch(0.22 0.06 ${hue2})`} /></linearGradient></defs>
+      <rect width="100" height="100" fill={`url(#g-${seed})`} />
+      {stripes.map(s => <rect key={s.key} x={s.off} y="0" width={s.w * 0.45} height="100" fill={`oklch(0.40 0.10 ${hue1 + s.key*20})`} opacity="0.35" />)}
+      {label && <text x="8" y="94" fill="oklch(0.95 0.01 85)" opacity="0.9" fontSize="7" fontFamily="JetBrains Mono, monospace" letterSpacing="0.5">{label}</text>}
+    </svg>
+  );
+};
+
+const Waveform = ({ seed }) => {
+  const bars = useMemo(() => { const h = hash(seed); return Array.from({length:32}).map((_,i) => { const v = Math.sin((h + i*13)*0.013)*0.5 + 0.5; return 0.2 + v*0.8; }); }, [seed]);
+  return <div className="wave" aria-hidden="true">{bars.map((b,i) => <div key={i} className="bar" style={{ height: `${b*28+4}px` }} />)}</div>;
+};
+
+const GENRES = ['Afrobeats', 'Amapiano', 'Afro-Swing', 'Afro-House', 'Afro-Fusion', 'Afro-Pop'];
+const KEYS = ['C min', 'D min', 'F# min', 'A min', 'G maj', 'E maj', 'Bb min'];
+const BOT_HANDLES = ['@vibez_4_days','@santino.mx','@kofi_beats','@lola.studio','@drumwolf','@niko.wav','@amara.collective','@bassline_bobo','@sundownrecs','@ofori.studio','@teejay.ng','@mels.mixes','@kidxcoast','@palmwine_pete','@zenab'];
+
+const SEED_BEATS = [
+  { title: 'LAGOS RAIN', starting: 150, bpm: 104, key: 'F# min', genre: 'Afrobeats', duration: '2:48', hotBias: 2.2 },
+  { title: 'SUNSET DRIVE', starting: 100, bpm: 98, key: 'A min', genre: 'Afro-Swing', duration: '3:12', hotBias: 1.6 },
+  { title: 'IGBO MOON', starting: 200, bpm: 112, key: 'C min', genre: 'Afrobeats', duration: '2:56', hotBias: 2.5 },
+  { title: 'AMAPIANO 003', starting: 120, bpm: 115, key: 'G maj', genre: 'Amapiano', duration: '3:04', hotBias: 1.1 },
+  { title: 'NIGHT MARKET', starting: 90, bpm: 96, key: 'D min', genre: 'Afro-Fusion', duration: '2:32', hotBias: 0.7 },
+  { title: 'COAST TO COAST', starting: 180, bpm: 108, key: 'E maj', genre: 'Afro-Pop', duration: '3:20', hotBias: 1.9 },
+  { title: 'HEAT WAVE', starting: 75, bpm: 102, key: 'Bb min', genre: 'Afro-House', duration: '3:44', hotBias: 0.9 },
+  { title: 'GOLDEN HOUR', starting: 160, bpm: 106, key: 'A min', genre: 'Afrobeats', duration: '2:44', hotBias: 2.0 },
+];
+
+const seedBeats = () => SEED_BEATS.map((b, i) => {
+  const id = 'seed-' + i;
+  const bids = []; let currentBid = b.starting; let endsAt = null;
+  if (i === 2) {
+    const start = Date.now() - 16 * 60 * 1000;
+    endsAt = start + AUCTION_MS; currentBid = b.starting + 85;
+    bids.push(
+      { id: uid(), bidder: '@vibez_4_days', amount: b.starting + 10, at: start },
+      { id: uid(), bidder: '@lola.studio', amount: b.starting + 25, at: start + 2*60*1000 },
+      { id: uid(), bidder: '@drumwolf', amount: b.starting + 45, at: start + 6*60*1000 },
+      { id: uid(), bidder: '@kofi_beats', amount: b.starting + 65, at: start + 11*60*1000 },
+      { id: uid(), bidder: '@santino.mx', amount: currentBid, at: start + 14*60*1000 },
+    );
+  } else if (i === 0) {
+    const start = Date.now() - 8 * 60 * 1000;
+    endsAt = start + AUCTION_MS; currentBid = b.starting + 40;
+    bids.push(
+      { id: uid(), bidder: '@niko.wav', amount: b.starting + 10, at: start },
+      { id: uid(), bidder: '@teejay.ng', amount: b.starting + 25, at: start + 3*60*1000 },
+      { id: uid(), bidder: '@amara.collective', amount: currentBid, at: start + 7*60*1000 },
+    );
+  } else if (i === 5) {
+    const start = Date.now() - 2 * 60 * 1000;
+    endsAt = start + AUCTION_MS; currentBid = b.starting + 15;
+    bids.push({ id: uid(), bidder: '@mels.mixes', amount: b.starting + 15, at: start });
+  }
+  return { id, title: b.title, bpm: b.bpm, key: b.key, genre: b.genre, duration: b.duration, startingBid: b.starting, currentBid, topBidder: bids.length ? bids[bids.length-1].bidder : null, bids, endsAt, hotBias: b.hotBias, createdAt: Date.now() - (8-i)*86400000, status: 'live' };
+});
+
+function auctionStatus(beat) {
+  if (beat.bids.length === 0) return { key: 'open', label: 'Open · starts on 1st bid', timeLeftMs: null, urgent: false };
+  const timeLeftMs = Math.max(0, (beat.endsAt || 0) - Date.now());
+  if (timeLeftMs <= 0) return { key: 'ending', label: 'Ending…', timeLeftMs: 0, urgent: true };
+  if (timeLeftMs < 5 * 60 * 1000) return { key: 'ending', label: 'Ending soon', timeLeftMs, urgent: true };
+  if (beat.bids.length >= 4) return { key: 'hot', label: 'HOT', timeLeftMs, urgent: false };
+  return { key: 'live', label: 'Live', timeLeftMs, urgent: false };
+}
+
+function App() {
+  const [tab, setTab] = useState(() => load(LS.tab, 'market'));
+  const [beats, setBeats] = useState(() => load(LS.beats, seedBeats()));
+  const [sold, setSold] = useState(() => load(LS.sold, []));
+  const [me, setMe] = useState(() => load(LS.me, { handle: '', email: '' }));
+  const [query, setQuery] = useState('');
+  const [genreFilter, setGenreFilter] = useState('All');
+  const [playingId, setPlayingId] = useState(null);
+  const [bidBeat, setBidBeat] = useState(null);
+  const [wonSummary, setWonSummary] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [leavingId, setLeavingId] = useState(null);
+  const [activity, setActivity] = useState([]);
+  const [bumpedId, setBumpedId] = useState(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => save(LS.beats, beats), [beats]);
+  useEffect(() => save(LS.sold, sold), [sold]);
+  useEffect(() => save(LS.tab, tab), [tab]);
+  useEffect(() => save(LS.me, me), [me]);
+  useEffect(() => { const t = setInterval(() => setTick(x => x+1), 1000); return () => clearInterval(t); }, []);
+
+  const toast = useCallback((msg, kind='ok') => {
+    const id = uid();
+    setToasts(ts => [...ts, { id, msg, kind }]);
+    setTimeout(() => setToasts(ts => ts.filter(t => t.id !== id)), 4200);
+  }, []);
+  const pushActivity = useCallback((entry) => { setActivity(a => [{ id: uid(), at: Date.now(), ...entry }, ...a].slice(0, 40)); }, []);
+
+  const applyBid = useCallback((beatId, amount, bidder) => {
+    setBeats(bs => bs.map(b => {
+      if (b.id !== beatId || b.status !== 'live') return b;
+      if (b.bids.length > 0 && amount < b.currentBid + MIN_INCREMENT) return b;
+      if (b.bids.length === 0 && amount < b.startingBid) return b;
+      const nowT = Date.now();
+      let endsAt = b.endsAt;
+      if (!endsAt) { endsAt = nowT + AUCTION_MS; }
+      else if (endsAt - nowT < ANTISNIPE_MS) { endsAt = nowT + ANTISNIPE_EXTEND_MS; }
+      return { ...b, currentBid: amount, topBidder: bidder, endsAt, bids: [...b.bids, { id: uid(), bidder, amount, at: nowT }] };
+    }));
+    setBumpedId(beatId);
+    setTimeout(() => setBumpedId(x => x === beatId ? null : x), 800);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const live = beats.filter(b => b.status === 'live');
+      if (live.length === 0) return;
+      const weighted = live.map(b => ({ b, w: (b.hotBias||1) * (1 + Math.min(b.bids.length,6)*0.3) }));
+      const totalW = weighted.reduce((s,x) => s + x.w, 0);
+      let pick = Math.random() * totalW; let target = weighted[0].b;
+      for (const x of weighted) { pick -= x.w; if (pick <= 0) { target = x.b; break; } }
+      const heatChance = Math.min(0.9, 0.15 + (target.bids.length*0.08) + (target.hotBias||1)*0.05);
+      if (Math.random() > heatChance) return;
+      if (target.topBidder === me.handle && Math.random() < 0.35) return;
+      const raise = 5 + Math.floor(Math.random() * 25 / 5) * 5;
+      const base = target.bids.length === 0 ? target.startingBid : target.currentBid + MIN_INCREMENT;
+      const amount = Math.max(base, target.currentBid + raise);
+      const handle = BOT_HANDLES[Math.floor(Math.random()*BOT_HANDLES.length)];
+      if (handle === target.topBidder) return;
+      applyBid(target.id, amount, handle);
+      pushActivity({ type: 'bid', title: target.title, bidder: handle, amount });
+    }, BOT_TICK_MS);
+    return () => clearInterval(interval);
+  }, [beats, applyBid, pushActivity, me.handle]);
+
+  useEffect(() => {
+    const nowT = Date.now();
+    beats.forEach(b => {
+      if (b.status !== 'live' || !b.endsAt || nowT < b.endsAt || b.bids.length === 0) return;
+      setLeavingId(b.id);
+      setTimeout(() => {
+        setBeats(curr => curr.filter(x => x.id !== b.id));
+        const record = {
+          id: uid(), beatId: b.id, title: b.title, price: b.currentBid, bpm: b.bpm, keySig: b.key, genre: b.genre,
+          buyerHandle: b.topBidder,
+          buyerEmail: b.topBidder === me.handle ? me.email : (b.topBidder?.replace('@','') + '@bidder.example'),
+          soldAt: Date.now(), deliveryId: 'BAF-' + Date.now().toString(36).toUpperCase(), bids: b.bids,
+        };
+        setSold(s => [record, ...s]);
+        pushActivity({ type: 'won', title: b.title, bidder: b.topBidder, amount: b.currentBid });
+        setLeavingId(null);
+        if (b.topBidder === me.handle) setWonSummary(record);
+        else toast(`"${b.title}" sold to ${b.topBidder} for ${fmt$(b.currentBid)}`, 'hot');
+      }, 550);
+    });
+  }, [beats, me.handle, me.email, pushActivity, toast]);
+
+  const visibleBeats = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return beats.filter(b => b.status === 'live')
+      .filter(b => genreFilter === 'All' || b.genre === genreFilter)
+      .filter(b => !q || b.title.toLowerCase().includes(q) || b.genre.toLowerCase().includes(q));
+  }, [beats, query, genreFilter]);
+
+  const scoreHeat = (b) => {
+    const timeLeft = b.endsAt ? Math.max(0, b.endsAt - Date.now()) : AUCTION_MS;
+    const urgencyBoost = b.bids.length > 0 && timeLeft < 5*60*1000 ? 30 : 0;
+    return (b.bids.length * 10) + (b.currentBid * 0.1) + urgencyBoost;
+  };
+  const leaderboard = useMemo(() => [...beats.filter(b => b.status === 'live')].sort((a,b) => scoreHeat(b) - scoreHeat(a)).slice(0, 6), [beats]);
+
+  const liveCount = beats.filter(b => b.status === 'live').length;
+  const activeBidCount = beats.reduce((s,b) => s + (b.bids?.length||0), 0);
+  const totalRevenue = sold.reduce((s,x) => s + x.price, 0);
+
+  const handleAddBeat = (beat) => {
+    setBeats(bs => [{ id: uid(), ...beat, currentBid: beat.startingBid, topBidder: null, bids: [], endsAt: null, hotBias: 1, createdAt: Date.now(), status: 'live' }, ...bs]);
+    toast(`"${beat.title}" listed for auction`);
+    setTab('market');
+  };
+
+  const handlePlaceBid = ({ beat, amount, handle, email }) => {
+    const handleClean = (handle.startsWith('@') ? handle : '@' + handle).toLowerCase();
+    setMe({ handle: handleClean, email });
+    applyBid(beat.id, amount, handleClean);
+    pushActivity({ type: 'bid', title: beat.title, bidder: handleClean, amount, self: true });
+    toast(`You're the top bid on "${beat.title}" at ${fmt$(amount)}`);
+  };
+
+  return (<>
+    <TopBar tab={tab} setTab={setTab} liveCount={liveCount} activeBidCount={activeBidCount} />
+    <div className="page">
+      {tab === 'market' && (
+        <div className="layout">
+          <main>
+            <Hero liveCount={liveCount} activeBidCount={activeBidCount} soldCount={sold.length} />
+            <FilterRow query={query} setQuery={setQuery} genreFilter={genreFilter} setGenreFilter={setGenreFilter} />
+            {visibleBeats.length === 0 ? (
+              <div className="empty"><h3>No open auctions</h3><p>Check back soon — new drops come fast.</p></div>
+            ) : (
+              <div className="grid">
+                {visibleBeats.map(beat => (
+                  <BeatCard key={beat.id} beat={beat} me={me}
+                    isPlaying={playingId === beat.id}
+                    isLeaving={leavingId === beat.id}
+                    onTogglePlay={() => setPlayingId(p => p === beat.id ? null : beat.id)}
+                    onBid={() => setBidBeat(beat)} />
+                ))}
+              </div>
+            )}
+          </main>
+          <aside>
+            <Leaderboard items={leaderboard} bumpedId={bumpedId} activity={activity} me={me} onPick={(b) => setBidBeat(b)} />
+          </aside>
+        </div>
+      )}
+      {tab === 'studio' && <StudioView beats={beats} sold={sold} totalRevenue={totalRevenue} onUpload={() => setTab('upload')} />}
+      {tab === 'upload' && <UploadPanel onSubmit={handleAddBeat} onCancel={() => setTab('studio')} />}
+    </div>
+    {bidBeat && (() => {
+      const fresh = beats.find(b => b.id === bidBeat.id) || bidBeat;
+      return <BidModal beat={fresh} me={me} onClose={() => setBidBeat(null)}
+        onSubmit={(amount, handle, email) => handlePlaceBid({ beat: fresh, amount, handle, email })} />;
+    })()}
+    {wonSummary && <WonModal record={wonSummary} onClose={() => setWonSummary(null)} />}
+    <div className="toast-wrap">
+      {toasts.map(t => <div key={t.id} className={`toast ${t.kind==='hot' ? 'hot':''}`}><span className="tdot" /> {t.msg}</div>)}
+    </div>
+  </>);
+}
+
+function TopBar({ tab, setTab, liveCount, activeBidCount }) {
+  return (
+    <div className="topbar"><div className="topbar-inner">
+      <div className="logo"><span className="dot" />BUYAFROBEATS<span className="sub">/ live auctions</span></div>
+      <div className="tabs">
+        <button className={`tab ${tab==='market'?'is-active':''}`} onClick={() => setTab('market')}>Auctions</button>
+        <button className={`tab admin ${tab==='studio'?'is-active':''}`} onClick={() => setTab('studio')}>My Studio</button>
+      </div>
+      <div className="spacer" />
+      <div className="counter"><span className="live-dot" /> <b>{liveCount}</b> live · <b>{activeBidCount}</b> total bids</div>
+    </div></div>
+  );
+}
+
+function Hero({ liveCount, activeBidCount, soldCount }) {
+  return (
+    <div className="hero">
+      <div className="eyebrow"><span className="live-dot" /> Live now · bidding open</div>
+      <h1>One-of-one beats. <em>Highest bid wins.</em></h1>
+      <p>Every beat here is mine. Bid, outbid, lose sleep. When the 30-minute timer hits zero, the file ships to the winner's inbox and the beat <em style={{color:'var(--accent)', fontStyle:'normal'}}>vanishes</em> from this site forever.</p>
+      <div className="hero-stats">
+        <div className="stat-pill"><span className="k">Open</span><span className="v accent">{liveCount}</span></div>
+        <div className="stat-pill"><span className="k">Active bids</span><span className="v">{activeBidCount}</span></div>
+        <div className="stat-pill"><span className="k">Sold</span><span className="v">{soldCount}</span></div>
+        <div className="stat-pill"><span className="k">Timer</span><span className="v">30:00 from first bid</span></div>
+      </div>
+    </div>
+  );
+}
+
+function FilterRow({ query, setQuery, genreFilter, setGenreFilter }) {
+  const genres = ['All', ...GENRES];
+  return (
+    <div className="filter-row">
+      <div className="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color:'var(--ink-mute)' }}><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+        <input placeholder="Search title or genre…" value={query} onChange={e => setQuery(e.target.value)} />
+      </div>
+      {genres.map(g => <button key={g} className={`chip ${genreFilter===g?'is-active':''}`} onClick={() => setGenreFilter(g)}>{g}</button>)}
+    </div>
+  );
+}
+
+function BeatCard({ beat, me, isPlaying, isLeaving, onTogglePlay, onBid }) {
+  const s = auctionStatus(beat);
+  const isHot = s.key === 'hot' || s.key === 'ending';
+  const iAmTop = me.handle && beat.topBidder === me.handle;
+  return (
+    <div className={`card ${isPlaying?'is-playing':''} ${isLeaving?'is-leaving':''} ${isHot?'is-hot':''}`}>
+      <div className="cover">
+        <CoverArt seed={beat.id + beat.title} label={beat.genre} />
+        <span className={`status ${s.key}`}>{s.label}</span>
+        <span className="label">{beat.duration}</span>
+        <button className="play" onClick={onTogglePlay} aria-label={isPlaying?'Pause':'Play'}>
+          {isPlaying ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          : <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>}
+        </button>
+      </div>
+      <div className="card-body">
+        <div>
+          <div className="title">{beat.title}</div>
+          <div className="producer">{beat.bpm} BPM · {beat.key} · {beat.genre}</div>
+        </div>
+        <Waveform seed={beat.id} />
+        <div className="auction-row">
+          <div><div className="k">Current bid</div><div className="v accent">{fmt$(beat.currentBid)}</div></div>
+          <div><div className="k">{beat.bids.length===0 ? 'Auction clock' : 'Time left'}</div><div className={`v ${s.urgent?'danger':''}`}>{beat.bids.length===0 ? '30:00' : fmtTime(s.timeLeftMs)}</div></div>
+        </div>
+        <div className="card-actions">
+          <div className="bidstats">
+            {beat.bids.length===0 ? <>No bids yet · starts at <b>{fmt$(beat.startingBid)}</b></>
+              : <><b>{beat.bids.length}</b> bids · top <b>{beat.topBidder}</b>{iAmTop && <span style={{color:'var(--accent)', marginLeft:6}}>· you</span>}</>}
+          </div>
+          <button className="btn btn-primary" onClick={onBid}>{beat.bids.length===0 ? 'Start bidding' : 'Place bid'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Leaderboard({ items, bumpedId, activity, me, onPick }) {
+  return (
+    <div className="leaderboard">
+      <div className="lb-head">
+        <h3><span className="live-dot" /> Leaderboard</h3>
+        <span className="hint">TOP 6 · LIVE</span>
+      </div>
+      {items.length===0 ? <div className="lb-empty">No live auctions right now.</div>
+        : items.map((b,i) => {
+          const s = auctionStatus(b);
+          const iAmTop = me.handle && b.topBidder === me.handle;
+          return (
+            <div key={b.id} className={`lb-item ${bumpedId===b.id?'is-bumped':''}`} onClick={() => onPick(b)}>
+              <div className="lb-rank">{String(i+1).padStart(2,'0')}</div>
+              <div className="lb-cover"><CoverArt seed={b.id + b.title} /></div>
+              <div className="lb-info">
+                <div className="lb-title">{b.title}</div>
+                <div className="lb-sub">
+                  {b.bids.length >= 4 && <span className="flame">▲</span>}
+                  <span>{b.bids.length} bid{b.bids.length===1?'':'s'}</span>
+                  {iAmTop && <span style={{color:'var(--accent)'}}>· you top</span>}
+                </div>
+              </div>
+              <div className="lb-bid">
+                <div className="amt">{fmt$(b.currentBid)}</div>
+                <div className={`t ${s.urgent?'urgent':''}`}>{b.bids.length===0 ? 'not started' : fmtTime(s.timeLeftMs||0)}</div>
+              </div>
+            </div>
+          );
+        })}
+      <div className="lb-activity">
+        <h4>Live activity</h4>
+        {activity.length===0 ? <div style={{fontFamily:'JetBrains Mono, monospace', fontSize: 11, color:'var(--ink-mute)'}}>waiting for bids…</div>
+          : activity.slice(0,6).map(a => (
+            <div className="activity-item" key={a.id}>
+              <span className="dot" />
+              <span>{a.type==='won' ? <><b>{a.bidder}</b> won <b>{a.title}</b> at {fmt$(a.amount)}</>
+                : <><b>{a.bidder}</b>{a.self?' (you)':''} bid <b>{fmt$(a.amount)}</b> on {a.title}</>}</span>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+function BidModal({ beat, me, onClose, onSubmit }) {
+  const s = auctionStatus(beat);
+  const minBid = beat.bids.length===0 ? beat.startingBid : beat.currentBid + MIN_INCREMENT;
+  const quickOptions = [minBid, minBid+10, minBid+25, minBid+50];
+  const [amount, setAmount] = useState(minBid);
+  const [handle, setHandle] = useState(me.handle || '');
+  const [email, setEmail] = useState(me.email || '');
+  useEffect(() => { setAmount(a => Math.max(Number(a)||0, minBid)); }, [minBid]);
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validHandle = handle.trim().length >= 2;
+  const validAmount = Number(amount) >= minBid;
+  const canSubmit = validEmail && validHandle && validAmount;
+  const submit = () => { if (!canSubmit) return; onSubmit(Number(amount), handle.trim(), email.trim()); onClose(); };
+  const timeLeft = beat.endsAt ? Math.max(0, beat.endsAt - Date.now()) : AUCTION_MS;
+  const iAmTop = me.handle && beat.topBidder === me.handle;
+  return (
+    <div className="backdrop" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3>Place a bid</h3>
+        <p className="lead">{beat.bids.length===0
+          ? 'Your bid will start the 30-minute auction clock. If anyone bids in the last 2 minutes, the timer extends by 2.'
+          : 'Highest bid at zero wins. Timer extends by 2 minutes if a bid lands in the final 2.'}</p>
+        <div className="line-item">
+          <div className="mini-cover"><CoverArt seed={beat.id + beat.title} /></div>
+          <div><div className="t">{beat.title}</div><div className="s">{beat.bpm} BPM · {beat.key} · {beat.genre}</div></div>
+          <div className="amt"><div className="big">{fmt$(beat.currentBid)}</div><div className="sml">{beat.bids.length} bids</div></div>
+        </div>
+        <div className={`timer-block ${s.urgent?'urgent':''}`}>
+          <div>
+            <div className="tlabel">{beat.bids.length===0 ? 'Clock starts on your bid' : 'Time remaining'}</div>
+            <div className="tnum">{beat.bids.length===0 ? '30:00' : fmtTime(timeLeft)}</div>
+          </div>
+          <div style={{flex:1}} />
+          {iAmTop && <div style={{fontFamily:'JetBrains Mono, monospace', fontSize:10, color:'var(--accent)', textTransform:'uppercase', letterSpacing:'0.08em'}}>You're top<br/>bidder</div>}
+        </div>
+        <div className="field"><label>Your bid · min {fmt$(minBid)}</label>
+          <input type="number" min={minBid} step={MIN_INCREMENT} value={amount} onChange={e => setAmount(e.target.value)} /></div>
+        <div className="bid-quick">
+          {quickOptions.map(q => <button key={q} className={Number(amount)===q?'is-active':''} onClick={() => setAmount(q)}>{fmt$(q)}</button>)}
+        </div>
+        <div className="row2">
+          <div className="field"><label>Your handle</label><input type="text" value={handle} placeholder="@yourname" onChange={e => setHandle(e.target.value)} /></div>
+          <div className="field"><label>Email (for delivery if you win)</label><input type="email" value={email} placeholder="you@example.com" onChange={e => setEmail(e.target.value)} /></div>
+        </div>
+        {beat.bids.length>0 && (
+          <div style={{marginBottom:8}}>
+            <div style={{fontFamily:'JetBrains Mono, monospace', fontSize:10, color:'var(--ink-mute)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6}}>Bid history</div>
+            <div className="bid-history">
+              {[...beat.bids].reverse().map((bid,i) => (
+                <div key={bid.id} className={`bid-history-row ${i===0?'is-top':''}`}>
+                  <span className="bidder">{bid.bidder}{bid.bidder===me.handle?' · you':''}</span>
+                  <span className="amt">{fmt$(bid.amount)}</span>
+                  <span className="time">{new Date(bid.at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="actions">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" disabled={!canSubmit} onClick={submit}>Bid {fmt$(amount)} →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WonModal({ record, onClose }) {
+  return (
+    <div className="backdrop" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3 style={{display:'flex', alignItems:'center', gap:10}}><span style={{width:10,height:10,borderRadius:'50%',background:'var(--accent)'}} /> You won the auction</h3>
+        <p className="lead"><b style={{color:'var(--ink)'}}>{record.title}</b> is yours at <b style={{color:'var(--accent)'}}>{fmt$(record.price)}</b>. The file has been emailed to <b style={{color:'var(--ink)'}}>{record.buyerEmail}</b> and removed from the site.</p>
+        <div className="email-card">
+          <div className="email-head"><span>from: deliveries@buyafrobeats · to: {record.buyerEmail}</span><span className="pill">DELIVERED</span></div>
+          <div className="email-body">
+            <div className="brand"><span className="d" /> BUYAFROBEATS</div>
+            <h4>You won. Your beat is ready.</h4>
+            <p>Congrats — you won the auction for <b>{record.title}</b> at <b>{fmt$(record.price)}</b>. This was a one-of-one listing. The file is now exclusively yours.</p>
+            <a className="download" href="#" onClick={e => e.preventDefault()}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 3v13m0 0-4-4m4 4 4-4"/><path d="M5 21h14"/></svg>
+              Download {record.title}.wav
+            </a>
+            <div className="fine">Delivery ID: {record.deliveryId}<br/>License: Exclusive · BPM {record.bpm} · {record.keySig} · {record.genre}<br/>Link expires in 7 days.</div>
+          </div>
+        </div>
+        <div className="actions"><button className="btn btn-primary" onClick={onClose}>Nice</button></div>
+      </div>
+    </div>
+  );
+}
+
+function StudioView({ beats, sold, totalRevenue, onUpload }) {
+  const [selected, setSelected] = useState(null);
+  return (
+    <div>
+      <div className="admin-banner"><span style={{width:6,height:6,borderRadius:'50%',background:'var(--accent)',display:'inline-block'}} /> Admin · only you see this</div>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24, gap:16, flexWrap:'wrap'}}>
+        <div>
+          <h2 style={{margin:0, fontSize:28, letterSpacing:'-0.02em'}}>My Studio</h2>
+          <p style={{color:'var(--ink-dim)', margin:'4px 0 0', fontSize:14}}>Manage your catalog, track live auctions, review sales.</p>
+        </div>
+        <button className="btn btn-primary" onClick={onUpload}>+ Upload new beat</button>
+      </div>
+      <div style={{display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12, marginBottom:32}}>
+        {[
+          ['Live', beats.filter(b=>b.status==='live').length],
+          ['Sold', sold.length],
+          ['Revenue', fmt$(totalRevenue), true],
+          ['Avg sale', fmt$(sold.length ? totalRevenue/sold.length : 0)],
+        ].map(([k,v,accent]) => (
+          <div key={k} className="stat-pill" style={{padding:'14px 16px', borderRadius:14}}>
+            <div><div style={{fontFamily:'JetBrains Mono, monospace', fontSize:10, color:'var(--ink-mute)', textTransform:'uppercase', letterSpacing:'0.08em'}}>{k}</div>
+            <div style={{fontSize:24, fontWeight:600, marginTop:4, color: accent ? 'var(--accent)' : 'inherit'}}>{v}</div></div>
+          </div>
+        ))}
+      </div>
+      <h3 style={{fontSize:14, margin:'0 0 12px', fontFamily:'JetBrains Mono, monospace', textTransform:'uppercase', color:'var(--ink-mute)'}}>Live catalog</h3>
+      {beats.filter(b=>b.status==='live').length===0 ? <div className="empty" style={{marginBottom:32}}><h3>Nothing live</h3><p>Upload your next beat to open the next auction.</p></div>
+        : (
+          <table className="log-table" style={{marginBottom:32}}>
+            <thead><tr><th>Beat</th><th>Current bid</th><th>Bids</th><th>Top bidder</th><th>Time left</th></tr></thead>
+            <tbody>
+              {beats.filter(b=>b.status==='live').map(b => {
+                const s = auctionStatus(b);
+                return (
+                  <tr key={b.id}>
+                    <td><b>{b.title}</b> <span className="mono" style={{color:'var(--ink-mute)', fontSize:11}}>· {b.genre}</span></td>
+                    <td className="num">{fmt$(b.currentBid)}</td>
+                    <td className="num">{b.bids.length}</td>
+                    <td className="mono" style={{fontSize:12}}>{b.topBidder || '—'}</td>
+                    <td className="mono" style={{fontSize:12, color: s.urgent ? 'var(--danger)' : 'var(--ink-dim)'}}>{b.bids.length===0 ? 'not started' : fmtTime(s.timeLeftMs||0)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      <h3 style={{fontSize:14, margin:'0 0 12px', fontFamily:'JetBrains Mono, monospace', textTransform:'uppercase', color:'var(--ink-mute)'}}>Sales log</h3>
+      {sold.length===0 ? <div className="empty"><h3>No sales yet</h3><p>When an auction ends, the delivery lands here.</p></div>
+        : (
+          <table className="log-table">
+            <thead><tr><th>Delivery ID</th><th>Beat</th><th>Winner</th><th>Price</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+              {sold.map((s,i) => (
+                <tr key={s.id} className={i===0?'row-new':''}>
+                  <td className="num" style={{color:'var(--ink-mute)'}}>{s.deliveryId}</td>
+                  <td><b>{s.title}</b></td>
+                  <td className="mono" style={{fontSize:12}}>{s.buyerHandle}<br/><span style={{color:'var(--ink-mute)', fontSize:11}}>{s.buyerEmail}</span></td>
+                  <td className="num" style={{color:'var(--accent)'}}>{fmt$(s.price)}</td>
+                  <td className="mono" style={{fontSize:12, color:'var(--ink-dim)'}}>{shortDate(s.soldAt)}</td>
+                  <td style={{textAlign:'right'}}><button className="btn" onClick={() => setSelected(s)}>View</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      {selected && (
+        <div className="backdrop" onClick={() => setSelected(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Sale · {selected.title}</h3>
+            <p className="lead">Won by <b style={{color:'var(--ink)'}}>{selected.buyerHandle}</b> for <b style={{color:'var(--accent)'}}>{fmt$(selected.price)}</b> on {shortDate(selected.soldAt)}.</p>
+            <div className="email-card">
+              <div className="email-head"><span>from: deliveries@buyafrobeats · to: {selected.buyerEmail}</span><span className="pill">DELIVERED</span></div>
+              <div className="email-body">
+                <div className="brand"><span className="d" /> BUYAFROBEATS</div>
+                <h4>You won. Your beat is ready.</h4>
+                <p>Congrats — you won the auction for <b>{selected.title}</b> at <b>{fmt$(selected.price)}</b>.</p>
+                <a className="download" href="#" onClick={e => e.preventDefault()}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 3v13m0 0-4-4m4 4 4-4"/><path d="M5 21h14"/></svg>
+                  Download {selected.title}.wav
+                </a>
+                <div className="fine">Delivery ID: {selected.deliveryId}<br/>License: Exclusive · BPM {selected.bpm} · {selected.keySig} · {selected.genre}</div>
+              </div>
+            </div>
+            <div className="actions"><button className="btn btn-primary" onClick={() => setSelected(null)}>Close</button></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UploadPanel({ onSubmit, onCancel }) {
+  const [title, setTitle] = useState('');
+  const [starting, setStarting] = useState(99);
+  const [bpm, setBpm] = useState(100);
+  const [keySig, setKeySig] = useState('C min');
+  const [genre, setGenre] = useState('Afrobeats');
+  const [duration, setDuration] = useState('2:48');
+  const [file, setFile] = useState(null);
+  const [over, setOver] = useState(false);
+  const [uploading, setUploading] = useState(0);
+  const inputRef = useRef(null);
+  const canSubmit = title && starting > 0 && file;
+  const handleFile = (f) => {
+    if (!f) return;
+    setFile(f);
+    if (f.type.startsWith('audio/')) {
+      const url = URL.createObjectURL(f); const a = new Audio(); a.src = url;
+      a.addEventListener('loadedmetadata', () => {
+        const secs = Math.round(a.duration || 0);
+        if (secs > 0) { const m = Math.floor(secs/60); const s = secs%60; setDuration(`${m}:${String(s).padStart(2,'0')}`); }
+        URL.revokeObjectURL(url);
+      });
+    }
+  };
+  const onDrop = (e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); };
+  const submit = () => {
+    if (!canSubmit || uploading > 0) return;
+    setUploading(1); let p = 0;
+    const tick = () => {
+      p += 8 + Math.random()*14;
+      if (p >= 100) {
+        setUploading(100);
+        setTimeout(() => {
+          onSubmit({ title: title.toUpperCase(), startingBid: Number(starting), bpm: Number(bpm), key: keySig, genre, duration, filename: file?.name || 'beat.wav' });
+          setUploading(0);
+        }, 400);
+      } else { setUploading(p); setTimeout(tick, 120); }
+    };
+    tick();
+  };
+  return (
+    <div className="panel">
+      <div className="admin-banner"><span style={{width:6,height:6,borderRadius:'50%',background:'var(--accent)',display:'inline-block'}} /> Admin · only you can list beats</div>
+      <h2>List a new beat for auction</h2>
+      <p className="lead">It goes live immediately. The 30-minute countdown starts the moment someone places the first bid.</p>
+      <div className="field"><label>Audio file</label>
+        <div className={`drop ${over?'is-over':''} ${file?'has-file':''}`}
+          onClick={() => inputRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setOver(true); }}
+          onDragLeave={() => setOver(false)} onDrop={onDrop}>
+          <input ref={inputRef} type="file" accept="audio/*" onChange={e => handleFile(e.target.files?.[0])} />
+          {!file ? <><div className="big">Drop .wav / .mp3 / .aiff here</div><div className="small">or click to browse · max 50 MB</div></>
+            : <><div className="big">File attached</div><div className="filename">{file.name} · {(file.size/(1024*1024)).toFixed(2)} MB</div></>}
+        </div>
+      </div>
+      <div className="field"><label>Title</label><input type="text" value={title} onChange={e => setTitle(e.target.value.toUpperCase())} placeholder="LAGOS RAIN" /></div>
+      <div className="row3">
+        <div className="field"><label>Starting bid (USD)</label><input type="number" min="1" step="1" value={starting} onChange={e => setStarting(e.target.value)} /></div>
+        <div className="field"><label>BPM</label><input type="number" min="40" max="240" value={bpm} onChange={e => setBpm(e.target.value)} /></div>
+        <div className="field"><label>Key</label><select value={keySig} onChange={e => setKeySig(e.target.value)}>{KEYS.map(k => <option key={k}>{k}</option>)}</select></div>
+      </div>
+      <div className="row2">
+        <div className="field"><label>Genre</label><select value={genre} onChange={e => setGenre(e.target.value)}>{GENRES.map(g => <option key={g}>{g}</option>)}</select></div>
+        <div className="field"><label>Duration</label><input type="text" value={duration} onChange={e => setDuration(e.target.value)} placeholder="2:48" /></div>
+      </div>
+      {uploading > 0 && (
+        <div>
+          <div style={{fontFamily:'JetBrains Mono, monospace', fontSize:11, color:'var(--ink-mute)', marginTop:8}}>Uploading · {Math.round(uploading)}%</div>
+          <div style={{height:6, width:'100%', background:'var(--bg-3)', borderRadius:999, overflow:'hidden', marginTop:10}}>
+            <div style={{width:`${uploading}%`, height:'100%', background:'var(--accent)', transition:'width .2s'}} />
+          </div>
+        </div>
+      )}
+      <div className="actions">
+        <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+        <button className="btn btn-primary" disabled={!canSubmit || uploading>0} onClick={submit}>{uploading>0 ? 'Uploading…' : 'Put it live →'}</button>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
