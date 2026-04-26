@@ -126,4 +126,35 @@ class Core {
         
         return self::escape($title);
     }
+
+    public function render_seo($page_seo = []) {
+        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $this->setting('site_title', 'BUYAFROBEATS'));
+        $desc = !empty($page_seo['description']) ? $page_seo['description'] : $this->setting('global_meta_description', 'Exclusive beat auctions.');
+        $keywords = !empty($page_seo['keywords']) ? $page_seo['keywords'] : $this->setting('global_meta_keywords', 'beats, auction, afrobeats');
+
+        $html = "<title>" . self::escape($title) . "</title>\n";
+        $html .= "    <meta name=\"description\" content=\"" . self::escape($desc) . "\">\n";
+        $html .= "    <meta name=\"keywords\" content=\"" . self::escape($keywords) . "\">\n";
+        
+        // OpenGraph
+        $html .= "    <meta property=\"og:title\" content=\"" . self::escape($title) . "\">\n";
+        $html .= "    <meta property=\"og:description\" content=\"" . self::escape($desc) . "\">\n";
+        $html .= "    <meta property=\"og:type\" content=\"website\">\n";
+        
+        // AdSense
+        $adsense_id = $this->setting('google_adsense_client');
+        if ($adsense_id) {
+            $html .= "    <script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" . self::escape($adsense_id) . "\" crossorigin=\"anonymous\"></script>\n";
+        }
+
+        return $html;
+    }
+
+    public function render_head_injection() {
+        return $this->setting('header_injection', '');
+    }
+
+    public function render_footer_injection() {
+        return $this->setting('footer_injection', '');
+    }
 }
