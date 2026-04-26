@@ -52,12 +52,3 @@ $title = $site_title . " — exclusive beat auctions";
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.472 14.382c-.301-.15-1.767-.872-2.04-.971-.272-.099-.47-.15-.67.15-.199.301-.77 1.05-.94 1.25-.17.199-.34.22-.64.07-1.125-.56-2.122-1.076-2.954-1.802-.736-.639-1.22-1.428-1.36-1.67-.14-.241-.01-.371.11-.49.11-.109.241-.281.361-.421.121-.14.161-.241.241-.401.08-.16.04-.301-.02-.451-.06-.15-.47-1.13-.645-1.551-.169-.411-.339-.351-.47-.351-.129 0-.279-.011-.429-.011-.15 0-.39.06-.59.281-.2.221-.771.751-.771 1.832 0 1.08.79 2.121.9 2.271.11.15 1.551 2.372 3.75 3.321.52.221.93.351 1.25.451.52.161.99.141 1.37.081.42-.061 1.29-.531 1.47-1.04.181-.51.181-.941.131-1.04-.05-.099-.19-.15-.49-.301zM12 22.12c-1.82 0-3.6-.481-5.16-1.39l-.37-.21-3.84 1.01 1.03-3.74-.23-.37A9.851 9.851 0 011.88 12c0-5.441 4.43-9.871 9.87-9.871s9.87 4.43 9.87 9.87c0 5.441-4.43 9.871-9.87 9.871zM12 0C5.373 0 0 5.373 0 12c0 2.12.55 4.18 1.59 6L0 24l6.19-1.63A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
     </a>
 </div>
-
-<style>
-    .share-sidebar { position: fixed; right: 0; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 1000; padding: 12px; background: color-mix(in oklab, var(--bg) 80%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); border-right: 0; border-radius: 16px 0 0 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-    .share-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; color: var(--ink-dim); text-decoration: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .share-btn:hover { color: #fff; transform: translateX(-4px); }
-    .share-btn.twitter:hover { background: #1DA1F2; }
-    .share-btn.facebook:hover { background: #1877F2; }
-    .share-btn.whatsapp:hover { background: #25D366; }
-</style>
