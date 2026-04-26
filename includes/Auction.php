@@ -9,7 +9,8 @@ class Auction {
     }
 
     public function get_live_beats($genre = 'All', $search = '') {
-        $sql = "SELECT * FROM beats WHERE status = 'live'";
+        // Include live beats and beats sold in the last 24 hours
+        $sql = "SELECT * FROM beats WHERE (status = 'live' OR (status = 'sold' AND ends_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)))";
         $params = [];
 
         if ($genre !== 'All') {
@@ -23,7 +24,7 @@ class Auction {
             $params[] = "%$search%";
         }
 
-        $sql .= " ORDER BY created_at DESC";
+        $sql .= " ORDER BY status ASC, created_at DESC";
         $stmt = $this->core->db()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
@@ -97,6 +98,35 @@ class Auction {
         }
     }
 
+    public function cleanup_sold_beats() {
+        $db = $this->core->db();
+        // Find beats sold more than 24 hours ago that are still marked as 'sold'
+        $stmt = $db->prepare("SELECT * FROM beats WHERE status = 'sold' AND ends_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+        $stmt->execute();
+        $expired_beats = $stmt->fetchAll();
+
+        foreach ($expired_beats as $beat) {
+            $db->beginTransaction();
+            try {
+                // Delete audio file
+                if (!empty($beat['audio_path'])) {
+                    $file_path = __DIR__ . '/../' . $beat['audio_path'];
+                    if (file_exists($file_path)) {
+                        unlink($file_path);
+                    }
+                }
+
+                // Mark status as 'expired' (meaning vanished from site)
+                $stmt = $db->prepare("UPDATE beats SET status = 'expired', audio_path = '' WHERE id = ?");
+                $stmt->execute([$beat['id']]);
+
+                $db->commit();
+            } catch (\Exception $e) {
+                $db->rollBack();
+            }
+        }
+    }
+
     public function check_for_winners() {
         $db = $this->core->db();
         $now = date('Y-m-d H:i:s');
@@ -124,7 +154,8 @@ class Auction {
 
                 $stmt = $db->prepare("INSERT INTO sales (beat_id, delivery_id, winner_handle, winner_email, price, download_token, expires_at) 
                                       VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $expires_at = date('Y-m-d H:i:s', strtotime('+7 days'));
+                // Download link expires in 24 hours to match file deletion
+                $expires_at = date('Y-m-d H:i:s', strtotime('+24 hours'));
                 $stmt->execute([$beat['id'], $delivery_id, $beat['top_bidder'], $winner_email, $beat['current_bid'], $download_token, $expires_at]);
 
                 // Log activity

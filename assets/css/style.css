@@ -71,6 +71,8 @@ body { min-height: 100vh; }
 .card.is-playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .card.is-hot { border-color: color-mix(in oklab, var(--hot) 60%, var(--line)); }
 .card.is-hot:hover { border-color: var(--hot); }
+.card.is-sold { opacity: 0.8; filter: grayscale(0.5); }
+.card.is-sold:hover { border-color: var(--line); transform: none; }
 @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes cardOut { to { opacity: 0; transform: scale(0.94) translateY(-4px); filter: blur(4px); } }
 .card.is-leaving { animation: cardOut .55s ease forwards; pointer-events: none; }
@@ -86,6 +88,7 @@ body { min-height: 100vh; }
 .status.live { background: var(--accent); color: var(--accent-ink); }
 .status.hot { background: var(--hot); color: #fff; animation: hotPulse 1.2s ease-in-out infinite; }
 .status.ending { background: var(--danger); color: #fff; animation: hotPulse 0.8s ease-in-out infinite; }
+.status.sold { background: var(--ink-mute); color: #fff; }
 @keyframes hotPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 40%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; } }
 
 .card-body { padding: 14px 16px 16px; display:flex; flex-direction:column; gap: 10px; }
