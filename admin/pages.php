@@ -73,7 +73,13 @@ $edit_page = ($action === 'edit' && $id) ? array_filter($pages, fn($p) => $p['id
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .form-grid { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
+        .form-grid { display: flex; gap: 24px; align-items: flex-start; }
+        .form-main { flex: 1; min-width: 0; }
+        .form-side { width: 340px; flex-shrink: 0; position: sticky; top: 86px; }
+        @media (max-width: 1000px) {
+            .form-grid { flex-direction: column; }
+            .form-side { width: 100%; position: static; }
+        }
     </style>
 </head>
 <body>
@@ -135,58 +141,62 @@ $edit_page = ($action === 'edit' && $id) ? array_filter($pages, fn($p) => $p['id
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo Core::csrf_token(); ?>">
             <div class="form-grid">
-                <div class="panel">
-                    <div class="field">
-                        <label>Page Title</label>
-                        <input type="text" name="title" value="<?php echo $edit_page ? Core::escape($edit_page['title']) : ''; ?>" required>
-                    </div>
-                    <div class="field">
-                        <label>Slug (internal only)</label>
-                        <input type="text" name="slug" value="<?php echo $edit_page ? Core::escape($edit_page['slug']) : ''; ?>" placeholder="about-us">
-                    </div>
-                    <div class="field">
-                        <label>Content (HTML allowed)</label>
-                        <textarea name="content" style="height: 300px;"><?php echo $edit_page ? Core::escape($edit_page['content']) : ''; ?></textarea>
-                    </div>
+                <div class="form-main">
+                    <div class="panel">
+                        <div class="field">
+                            <label>Page Title</label>
+                            <input type="text" name="title" value="<?php echo $edit_page ? Core::escape($edit_page['title']) : ''; ?>" required>
+                        </div>
+                        <div class="field">
+                            <label>Slug (internal only)</label>
+                            <input type="text" name="slug" value="<?php echo $edit_page ? Core::escape($edit_page['slug']) : ''; ?>" placeholder="about-us">
+                        </div>
+                        <div class="field">
+                            <label>Content (HTML allowed)</label>
+                            <textarea name="content" style="height: 400px;"><?php echo $edit_page ? Core::escape($edit_page['content']) : ''; ?></textarea>
+                        </div>
 
-                    <h3 style="font-size: 14px; margin: 24px 0 12px; color: var(--accent);">SEO (Internal Pages Only)</h3>
-                    <div class="field">
-                        <label>Meta Title</label>
-                        <input type="text" name="meta_title" value="<?php echo $edit_page ? Core::escape($edit_page['meta_title']) : ''; ?>">
-                    </div>
-                    <div class="field">
-                        <label>Meta Description</label>
-                        <textarea name="meta_description"><?php echo $edit_page ? Core::escape($edit_page['meta_description']) : ''; ?></textarea>
-                    </div>
-                    <div class="field">
-                        <label>Meta Keywords</label>
-                        <input type="text" name="meta_keywords" value="<?php echo $edit_page ? Core::escape($edit_page['meta_keywords']) : ''; ?>">
+                        <h3 style="font-size: 14px; margin: 32px 0 16px; color: var(--accent);">SEO (Internal Pages Only)</h3>
+                        <div class="field">
+                            <label>Meta Title</label>
+                            <input type="text" name="meta_title" value="<?php echo $edit_page ? Core::escape($edit_page['meta_title']) : ''; ?>">
+                        </div>
+                        <div class="field">
+                            <label>Meta Description</label>
+                            <textarea name="meta_description"><?php echo $edit_page ? Core::escape($edit_page['meta_description']) : ''; ?></textarea>
+                        </div>
+                        <div class="field">
+                            <label>Meta Keywords</label>
+                            <input type="text" name="meta_keywords" value="<?php echo $edit_page ? Core::escape($edit_page['meta_keywords']) : ''; ?>">
+                        </div>
                     </div>
                 </div>
 
-                <div class="panel">
-                    <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Publishing</h3>
-                    <div class="field">
-                        <label>Status</label>
-                        <select name="status">
-                            <option value="published" <?php echo ($edit_page && $edit_page['status'] === 'published') ? 'selected' : ''; ?>>Published</option>
-                            <option value="draft" <?php echo ($edit_page && $edit_page['status'] === 'draft') ? 'selected' : ''; ?>>Draft</option>
-                        </select>
-                    </div>
-                    
-                    <h3 style="font-size: 14px; margin: 24px 0 12px; color: var(--accent);">External Link</h3>
-                    <div class="field">
-                        <label style="display:flex; align-items:center; gap:8px;">
-                            <input type="checkbox" name="is_external" value="1" <?php echo ($edit_page && $edit_page['is_external']) ? 'checked' : ''; ?>>
-                            Is External URL?
-                        </label>
-                    </div>
-                    <div class="field">
-                        <label>External URL</label>
-                        <input type="text" name="external_url" value="<?php echo $edit_page ? Core::escape($edit_page['external_url']) : ''; ?>" placeholder="https://...">
-                    </div>
+                <div class="form-side">
+                    <div class="panel">
+                        <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Publishing</h3>
+                        <div class="field">
+                            <label>Status</label>
+                            <select name="status">
+                                <option value="published" <?php echo ($edit_page && $edit_page['status'] === 'published') ? 'selected' : ''; ?>>Published</option>
+                                <option value="draft" <?php echo ($edit_page && $edit_page['status'] === 'draft') ? 'selected' : ''; ?>>Draft</option>
+                            </select>
+                        </div>
+                        
+                        <h3 style="font-size: 14px; margin: 24px 0 12px; color: var(--accent);">External Link</h3>
+                        <div class="field">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" name="is_external" value="1" <?php echo ($edit_page && $edit_page['is_external']) ? 'checked' : ''; ?>>
+                                Is External URL?
+                            </label>
+                        </div>
+                        <div class="field">
+                            <label>External URL</label>
+                            <input type="text" name="external_url" value="<?php echo $edit_page ? Core::escape($edit_page['external_url']) : ''; ?>" placeholder="https://...">
+                        </div>
 
-                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top:20px;"><?php echo $edit_page ? 'Update Page' : 'Create Page'; ?> →</button>
+                        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:20px;"><?php echo $edit_page ? 'Update Page' : 'Create Page'; ?> →</button>
+                    </div>
                 </div>
             </div>
         </form>
