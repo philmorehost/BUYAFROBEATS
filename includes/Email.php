@@ -36,7 +36,7 @@ class Email {
             $headers .= "Reply-To: $from\r\n";
             $headers .= "MIME-Version: 1.0\r\n";
             $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "X-Mailer: BUYAFROBEATS-PHP\r\n";
+            $headers .= "X-Mailer: " . $this->core->setting('site_title', 'BUYAFROBEATS') . "-PHP\r\n";
             
             return mail($to, $subject, $message, $headers);
         } catch (\Exception $e) {
@@ -67,12 +67,13 @@ class Email {
     }
 
     private function wrap_template($content) {
+        $site_title = Core::escape($this->core->setting('site_title', 'BUYAFROBEATS'));
         return "
         <div style='font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;'>
-            <div style='font-weight: bold; font-size: 20px; margin-bottom: 20px;'>BUYAFROBEATS</div>
+            <div style='font-weight: bold; font-size: 20px; margin-bottom: 20px;'>$site_title</div>
             $content
             <div style='margin-top: 30px; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 10px;'>
-                &copy; " . date('Y') . " BUYAFROBEATS Studio. All rights reserved.
+                &copy; " . date('Y') . " $site_title Studio. All rights reserved.
             </div>
         </div>";
     }

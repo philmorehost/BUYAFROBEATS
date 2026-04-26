@@ -28,7 +28,7 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>My Studio — BUYAFROBEATS</title>
+    <title>My Studio — <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
@@ -44,7 +44,7 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="../index.php" class="logo"><span class="dot"></span>BUYAFROBEATS<span class="sub">/ studio</span></a>
+        <a href="../index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
             <a href="index.php" class="tab is-active">Dashboard</a>
             <a href="upload.php" class="tab">+ Upload Beat</a>

@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>Studio Settings — BUYAFROBEATS</title>
+    <title>Studio Settings — <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span>BUYAFROBEATS<span class="sub">/ studio</span></a>
+        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
             <a href="index.php" class="tab">Dashboard</a>
             <a href="upload.php" class="tab">+ Upload Beat</a>
@@ -60,7 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">General</h3>
             <div class="field">
                 <label>Site Title</label>
-                <input type="text" name="site_title" value="<?php echo Core::escape($core->setting('site_title')); ?>">
+                <input type="text" name="site_title" value="<?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>">
+                <p style="font-size: 11px; color: var(--ink-mute); margin: 4px 0 0;">
+                    <b>Tip:</b> Use <code>SiteTitle</code> (PascalCase) to make the second part <span style="color:var(--accent)">orange</span>.
+                </p>
             </div>
 
             <h3 style="font-size: 14px; margin: 24px 0 12px; color: var(--accent);">SMTP Configuration</h3>

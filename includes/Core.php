@@ -100,4 +100,30 @@ class Core {
     public function is_admin() {
         return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
     }
+
+    public function render_logo() {
+        $title = $this->setting('site_title', 'BUYAFROBEATS');
+        
+        // Find second capital letter
+        $caps_found = 0;
+        $split_index = -1;
+        
+        for ($i = 0; $i < strlen($title); $i++) {
+            if (ctype_upper($title[$i])) {
+                $caps_found++;
+                if ($caps_found === 2) {
+                    $split_index = $i;
+                    break;
+                }
+            }
+        }
+        
+        if ($split_index !== -1) {
+            $part1 = substr($title, 0, $split_index);
+            $part2 = substr($title, $split_index);
+            return self::escape($part1) . '<span style="color:#ffa326">' . self::escape($part2) . '</span>';
+        }
+        
+        return self::escape($title);
+    }
 }

@@ -5,7 +5,8 @@ require_once __DIR__ . '/Auction.php';
 use BAF\Core;
 
 $core = Core::get_instance();
-$title = "BUYAFROBEATS — exclusive beat auctions";
+$site_title = $core->setting('site_title', 'BUYAFROBEATS');
+$title = $site_title . " — exclusive beat auctions";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -22,7 +23,7 @@ $title = "BUYAFROBEATS — exclusive beat auctions";
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span>BUYAFROBEATS<span class="sub">/ live auctions</span></a>
+        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ live auctions</span></a>
         <div class="tabs">
             <a href="index.php" class="tab is-active">Auctions</a>
             <?php if ($core->is_admin()): ?>
