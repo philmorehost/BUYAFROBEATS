@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/Core.php';
 use BAF\Core;
 
 $core = Core::get_instance();
+session_write_close(); // Prevent session locking for long-running stream
 $last_activity_id = 0;
 
 // Set time limit to 0 to keep the stream open
