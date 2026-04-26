@@ -232,6 +232,26 @@ body { min-height: 100vh; }
 .share-btn.facebook:hover { background: #1877F2; }
 .share-btn.whatsapp:hover { background: #25D366; }
 
+/* Article / Page Content */
+.page-content-wrap { max-width: 900px; margin: 0 auto; }
+.page-title { font-size: 42px; letter-spacing: -0.02em; margin: 0 0 24px; }
+.faq-wrap { max-width: 800px; margin: 0 auto; }
+.faq-title { font-size: 42px; letter-spacing: -0.02em; margin: 0 0 40px; text-align:center; }
+.faq-list { display:flex; flex-direction:column; gap:20px; }
+.faq-q { font-size: 18px; margin: 0 0 12px; color: var(--accent); }
+.faq-a { line-height:1.6; color:var(--ink-dim); margin:0; }
+
+.content { line-height: 1.7; color: var(--ink-dim); font-size: 17px; }
+.content p { margin-bottom: 24px; }
+.content h1, .content h2, .content h3, .content h4 { color: var(--ink); margin: 40px 0 16px; letter-spacing: -0.01em; }
+.content h1:first-child, .content h2:first-child, .content h3:first-child { margin-top: 0; }
+.content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in oklab, var(--accent) 30%, transparent); transition: border-color 0.2s; }
+.content a:hover { border-color: var(--accent); }
+.content ul, .content ol { margin-bottom: 24px; padding-left: 20px; }
+.content li { margin-bottom: 10px; }
+.content strong, .content b { color: var(--ink); font-weight: 600; }
+.content blockquote { border-left: 3px solid var(--accent); padding-left: 20px; margin: 32px 0; color: var(--ink); font-style: italic; }
+
 /* Footer */
 .footer { background: var(--bg-2); border-top: 1px solid var(--line); margin-top: 80px; padding: 80px 0 40px; }
 .footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 40px; }

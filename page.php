@@ -26,9 +26,9 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <div class="page">
-    <div class="panel" style="max-width: 900px; margin: 0 auto;">
-        <h1 style="font-size: 42px; letter-spacing: -0.02em; margin: 0 0 24px;"><?php echo Core::escape($page['title']); ?></h1>
-        <div class="content" style="line-height: 1.7; color: var(--ink-dim); font-size: 17px;">
+    <div class="panel page-content-wrap">
+        <h1 class="page-title"><?php echo Core::escape($page['title']); ?></h1>
+        <div class="content">
             <?php echo $page['content']; ?>
         </div>
     </div>
