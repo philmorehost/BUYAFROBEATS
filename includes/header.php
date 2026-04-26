@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/includes/Core.php';
-require_once __DIR__ . '/includes/Auction.php';
+require_once __DIR__ . '/Core.php';
+require_once __DIR__ . '/Auction.php';
 
 use BAF\Core;
 
