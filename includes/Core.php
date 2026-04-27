@@ -103,6 +103,7 @@ class Core {
 
     public function render_logo() {
         $title = $this->setting('site_title', 'BUYAFROBEATS');
+        $title = str_replace(' ', '', $title);
         
         // Find second capital letter
         $caps_found = 0;
