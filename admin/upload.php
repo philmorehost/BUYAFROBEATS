@@ -34,9 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $storage = new Storage();
         $filename = $storage->upload_audio($_FILES['audio']);
 
-        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_path, status) 
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'live')");
-        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename]);
+        $sample_filename = null;
+        if (isset($_FILES['sample']) && $_FILES['sample']['error'] === UPLOAD_ERR_OK) {
+            $sample_filename = $storage->upload_audio($_FILES['sample']);
+        }
+
+        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_path, sample_path, status)
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')");
+        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename, $sample_filename]);
 
         $success = "Beat \"$title\" has been listed live!";
     } catch (\Exception $e) {
@@ -80,9 +85,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo Core::csrf_token(); ?>">
-            <div class="field">
-                <label>Audio File (.wav, .mp3, .aif)</label>
-                <input type="file" name="audio" accept="audio/*" required>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="field">
+                    <label>Main Audio File (HQ)</label>
+                    <input type="file" name="audio" accept="audio/*" required>
+                </div>
+                <div class="field">
+                    <label>Sample Audio (optional)</label>
+                    <input type="file" name="sample" accept="audio/*">
+                </div>
             </div>
             
             <div class="field">

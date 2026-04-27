@@ -30,6 +30,20 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <div class="page">
+    <!-- Policy Notice -->
+    <div style="background: color-mix(in oklab, var(--danger) 10%, var(--bg-2)); border: 1px solid var(--danger); border-radius: 14px; padding: 18px 24px; margin-bottom: 28px; display: flex; align-items: center; gap: 20px;">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--danger); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </div>
+        <div>
+            <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;">CRITICAL: 24-Hour Download Policy</h3>
+            <p style="margin: 0; font-size: 14px; color: var(--ink-dim); line-height: 1.5;">
+                To maintain total exclusivity, all beats are <strong>permanently deleted</strong> from our servers 24 hours after an auction ends.
+                <span style="color: var(--ink);">Please ensure you download and back up your purchase immediately upon receipt.</span>
+            </p>
+        </div>
+    </div>
+
     <div class="layout">
         <main>
             <div class="hero">
@@ -87,7 +101,7 @@ include __DIR__ . '/includes/header.php';
                                 </svg>
                                 <span class="status <?php echo $status; ?>"><?php echo strtoupper($status); ?></span>
                                 <span class="label"><?php echo $beat['duration']; ?></span>
-                                <button class="play" aria-label="Play">
+                                <button class="play" aria-label="Play" data-sample="<?php echo $beat['sample_path'] ? 'uploads/' . $beat['sample_path'] : ''; ?>">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                                 </button>
                             </div>

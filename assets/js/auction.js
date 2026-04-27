@@ -51,6 +51,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return barsHtml;
     };
 
+    let currentAudio = null;
+    let audioTimer = null;
+
+    const stopAudio = () => {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
+        if (audioTimer) {
+            clearTimeout(audioTimer);
+            audioTimer = null;
+        }
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('is-playing'));
+        document.querySelectorAll('.play svg').forEach(s => s.innerHTML = '<path d="M8 5v14l11-7z"/>');
+    };
+
     // Initialize existing cards
     document.querySelectorAll('.card').forEach(card => {
         const id = card.getAttribute('data-id');
@@ -63,6 +79,39 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const waveContainer = card.querySelector('.wave');
         waveContainer.innerHTML = generateWaveform(id);
+
+        // Player Logic
+        const playBtn = card.querySelector('.play');
+        const sampleUrl = playBtn.getAttribute('data-sample');
+
+        playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            if (card.classList.contains('is-playing')) {
+                stopAudio();
+                return;
+            }
+
+            if (!sampleUrl) {
+                showToast('No sample available for this beat.', 'error');
+                return;
+            }
+
+            stopAudio();
+
+            currentAudio = new Audio(sampleUrl);
+            currentAudio.play();
+            card.classList.add('is-playing');
+            playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+
+            // Limit to 20 seconds
+            audioTimer = setTimeout(() => {
+                stopAudio();
+                showToast('Sample preview ended (20s limit).', 'ok');
+            }, 20000);
+
+            currentAudio.onended = stopAudio;
+        });
     });
 
     // Timer Logic
