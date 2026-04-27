@@ -56,7 +56,7 @@
         <div class="footer-bottom">
             <span>&copy; <?php echo date('Y'); ?> <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
             <div class="footer-legal">
-                <a href="index.php">Privacy</a> · <a href="index.php">Terms</a>
+                <a href="privacy.php">Privacy</a> · <a href="terms.php">Terms</a>
             </div>
         </div>
     </div>
