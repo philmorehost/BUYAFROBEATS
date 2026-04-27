@@ -235,6 +235,19 @@ body { min-height: 100vh; }
 .share-btn.facebook:hover { background: #1877F2; }
 .share-btn.whatsapp:hover { background: #25D366; }
 
+/* Accordion */
+.accordion { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--bg-2); }
+.accordion-item { border-bottom: 1px solid var(--line); }
+.accordion-item:last-child { border-bottom: 0; }
+.accordion-header { padding: 20px 24px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background 0.2s; }
+.accordion-header:hover { background: var(--bg-3); }
+.accordion-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: var(--ink); }
+.accordion-icon { width: 20px; height: 20px; transition: transform 0.3s; color: var(--ink-mute); }
+.accordion-item.is-active .accordion-icon { transform: rotate(180deg); color: var(--accent); }
+.accordion-item.is-active .accordion-header { border-bottom: 1px solid var(--line); }
+.accordion-content { padding: 0 24px; max-height: 0; overflow: hidden; transition: all 0.3s ease-out; background: var(--bg); }
+.accordion-item.is-active .accordion-content { padding: 20px 24px; max-height: 1000px; }
+
 /* Article / Page Content */
 .page-content-wrap { max-width: 900px; margin: 0 auto; }
 .page-title { font-size: 42px; letter-spacing: -0.02em; margin: 0 0 24px; }

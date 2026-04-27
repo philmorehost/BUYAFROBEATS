@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS `sales` (
     `winner_email` VARCHAR(100) NOT NULL,
     `price` DECIMAL(10, 2) NOT NULL,
     `download_token` VARCHAR(64) UNIQUE,
+    `payment_status` ENUM('pending', 'completed', 'failed', 'expired') DEFAULT 'pending',
+    `plisio_invoice_id` VARCHAR(100),
+    `plisio_invoice_url` TEXT,
     `expires_at` TIMESTAMP NULL,
     `sold_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`beat_id`) REFERENCES `beats`(`id`)

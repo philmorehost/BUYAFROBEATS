@@ -29,6 +29,8 @@
                 <div class="footer-nav">
                     <h4>Company</h4>
                     <a href="faqs.php">FAQs</a>
+                    <a href="privacy.php">Privacy Policy</a>
+                    <a href="terms.php">Terms & Conditions</a>
                     <?php 
                     require_once __DIR__ . '/CMS.php';
                     $cms_footer = new \BAF\CMS($core);

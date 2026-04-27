@@ -165,10 +165,10 @@ class Auction {
 
                 $db->commit();
                 
-                // Trigger Winning Email
+                // Trigger Winning Email with Payment Link
                 require_once __DIR__ . '/Email.php';
                 $email_svc = new \BAF\Email($this->core);
-                $email_svc->notify_win($winner_email, $beat['title'], $beat['current_bid'], $delivery_id, $download_token);
+                $email_svc->notify_win_payment($winner_email, $beat['title'], $beat['current_bid'], $delivery_id);
                 
             } catch (\Exception $e) {
                 $db->rollBack();

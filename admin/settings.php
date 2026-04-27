@@ -81,6 +81,7 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
             <a href="#social">Social</a>
             <a href="#ads">Ads & Analytics</a>
             <a href="#integration">Integrations</a>
+                <a href="#payment">Payments</a>
         </div>
 
         <form method="POST">
@@ -170,6 +171,16 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
             </div>
 
             <!-- Integration Tab -->
+                <!-- Payments Tab -->
+                <div id="payment" class="tab-content">
+                    <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Plisio Integration</h3>
+                    <div class="field">
+                        <label>Plisio API Key</label>
+                        <input type="password" name="plisio_api_key" value="<?php echo Core::escape($core->setting('plisio_api_key')); ?>" placeholder="Your Plisio Secret API Key">
+                        <p style="font-size: 11px; color: var(--ink-mute); margin: 4px 0 0;">Get your key from the <a href="https://plisio.net/dashboard/settings/api" target="_blank" style="color:var(--accent)">Plisio Dashboard</a>.</p>
+                    </div>
+                </div>
+
             <div id="integration" class="tab-content">
                 <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Custom Code Injection</h3>
                 <div class="field">
