@@ -179,7 +179,29 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
                         <input type="password" name="plisio_api_key" value="<?php echo Core::escape($core->setting('plisio_api_key')); ?>" placeholder="Your Plisio Secret API Key">
                         <p style="font-size: 11px; color: var(--ink-mute); margin: 4px 0 0;">Get your key from the <a href="https://plisio.net/dashboard/settings/api" target="_blank" style="color:var(--accent)">Plisio Dashboard</a>.</p>
                     </div>
+
+                    <?php
+                        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+                        $webhook_url = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['REQUEST_URI'])) . '/api/webhook_plisio.php';
+                    ?>
+                    <div class="field" style="margin-top: 24px;">
+                        <label>Status URL (Webhook)</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="webhook_url" value="<?php echo Core::escape($webhook_url); ?>" readonly style="background: var(--bg-3);">
+                            <button type="button" class="btn" onclick="copyWebhook()">Copy</button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--ink-mute); margin: 4px 0 0;">Enter this URL in your Plisio Shop settings as "Status URL".</p>
+                    </div>
                 </div>
+
+                <script>
+                function copyWebhook() {
+                    const el = document.getElementById('webhook_url');
+                    el.select();
+                    document.execCommand('copy');
+                    alert('Webhook URL copied to clipboard!');
+                }
+                </script>
 
             <div id="integration" class="tab-content">
                 <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Custom Code Injection</h3>
