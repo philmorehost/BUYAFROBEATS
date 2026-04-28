@@ -41,6 +41,15 @@ include __DIR__ . '/includes/header.php';
                     <div class="stat-pill"><span class="k">Active bids</span><span class="v"><?php echo $total_bids; ?></span></div>
                     <div class="stat-pill"><span class="k">Timer</span><span class="v">30:00 from first bid</span></div>
                 </div>
+
+                <div style="margin-top: 32px; display: flex; gap: 12px;">
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <a href="admin/index.php" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Enter My Studio →</a>
+                    <?php else: ?>
+                        <a href="register.php" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Join the Auction →</a>
+                        <a href="login.php" class="btn" style="padding: 12px 24px; font-weight: 600;">Sign In</a>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div class="filter-row">

@@ -1,10 +1,10 @@
 <?php
-require_once __DIR__ . '/../includes/Core.php';
+require_once __DIR__ . '/includes/Core.php';
 use BAF\Core;
 
 $core = Core::get_instance();
 if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
+    header('Location: admin/index.php');
     exit;
 }
 
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $google_id = $core->setting('google_client_id');
         if ($google_id):
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['REQUEST_URI'])) . '/api/google_callback.php';
+            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/api/google_callback.php';
             $google_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
                 'client_id' => $google_id,
                 'redirect_uri' => $redirect_uri,

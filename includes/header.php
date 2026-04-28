@@ -35,8 +35,8 @@ $title = $site_title . " — exclusive beat auctions";
             <?php if (isset($_SESSION['user_id'])): ?>
                 <a href="admin/index.php" class="tab admin">Enter Studio</a>
             <?php else: ?>
-                <a href="admin/register.php" class="tab">Signup</a>
-                <a href="admin/login.php" class="tab">Login</a>
+                <a href="register.php" class="tab">Signup</a>
+                <a href="login.php" class="tab">Login</a>
             <?php endif; ?>
         </div>
         <div class="spacer"></div>
