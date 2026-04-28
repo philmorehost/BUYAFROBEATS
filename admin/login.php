@@ -3,7 +3,7 @@ require_once __DIR__ . '/../includes/Core.php';
 use BAF\Core;
 
 $core = Core::get_instance();
-if ($core->is_admin()) {
+if (isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
 }
@@ -69,8 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label>Password</label>
                 <input type="password" name="password" required>
             </div>
-            <button type="submit" class="btn">Enter Studio →</button>
+            <button type="submit" class="btn">Log In →</button>
         </form>
+        <div style="text-align: center; margin-top: 20px; font-size: 13px; color: var(--ink-dim);">Don't have an account? <a href="register.php" style="color: var(--accent); text-decoration: none; font-weight: 600;">Sign up</a></div>
     </div>
 </body>
 </html>

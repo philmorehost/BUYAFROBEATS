@@ -27,8 +27,11 @@ $title = $site_title . " — exclusive beat auctions";
         <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ live auctions</span></a>
         <div class="tabs">
             <a href="index.php" class="tab is-active">Auctions</a>
-            <?php if ($core->is_admin()): ?>
-                <a href="admin/index.php" class="tab admin">My Studio</a>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="admin/index.php" class="tab admin">Enter Studio</a>
+            <?php else: ?>
+                <a href="admin/register.php" class="tab">Signup</a>
+                <a href="admin/login.php" class="tab">Login</a>
             <?php endif; ?>
         </div>
         <div class="spacer"></div>
