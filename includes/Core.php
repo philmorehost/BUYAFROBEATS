@@ -114,29 +114,44 @@ class Core {
 
     public function render_logo() {
         $title = $this->setting('site_title', 'BUYAFROBEATS');
-        $title = str_replace(' ', '', $title);
         
-        // Find second capital letter
-        $caps_found = 0;
-        $split_index = -1;
+        // Get index of first space if it exists, to use as split point
+        $space_index = strpos($title, ' ');
+
+        // Join title as one word for output
+        $clean_title = str_replace(' ', '', $title);
         
-        for ($i = 0; $i < strlen($title); $i++) {
-            if (ctype_upper($title[$i])) {
-                $caps_found++;
-                if ($caps_found === 2) {
-                    $split_index = $i;
-                    break;
+        $split_at = -1;
+
+        if ($space_index !== false) {
+            // Split where the space was
+            $split_at = $space_index;
+        } else {
+            // Find second capital letter (CapLock style)
+            $caps_found = 0;
+            for ($i = 0; $i < strlen($clean_title); $i++) {
+                if (ctype_upper($clean_title[$i])) {
+                    $caps_found++;
+                    if ($caps_found === 2) {
+                        $split_at = $i;
+                        break;
+                    }
                 }
             }
+
+            // Special handling for all-caps starting with BUY (e.g., BUYBEATS)
+            if ($split_at === 1 && strpos(strtoupper($clean_title), 'BUY') === 0 && strlen($clean_title) > 3) {
+                $split_at = 3;
+            }
         }
-        
-        if ($split_index !== -1) {
-            $part1 = substr($title, 0, $split_index);
-            $part2 = substr($title, $split_index);
+
+        if ($split_at > 0 && $split_at < strlen($clean_title)) {
+            $part1 = substr($clean_title, 0, $split_at);
+            $part2 = substr($clean_title, $split_at);
             return self::escape($part1) . '<span style="color:#ffa326">' . self::escape($part2) . '</span>';
         }
         
-        return self::escape($title);
+        return self::escape($clean_title);
     }
 
     public function render_seo($page_seo = []) {
