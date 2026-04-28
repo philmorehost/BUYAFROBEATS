@@ -113,8 +113,8 @@ class Core {
     }
 
     public function render_logo() {
-        $title = $this->setting('site_title', 'BUYAFROBEATS');
-        
+        $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
+
         // Get index of first space if it exists, to use as split point
         $space_index = strpos($title, ' ');
 
@@ -148,10 +148,11 @@ class Core {
         if ($split_at > 0 && $split_at < strlen($clean_title)) {
             $part1 = substr($clean_title, 0, $split_at);
             $part2 = substr($clean_title, $split_at);
-            return self::escape($part1) . '<span style="color:#ffa326">' . self::escape($part2) . '</span>';
+            // Wrap in a span to prevent parent flexbox 'gap' from separating them
+            return '<span>' . self::escape($part1) . '<span style="color:#ffa326">' . self::escape($part2) . '</span></span>';
         }
         
-        return self::escape($clean_title);
+        return '<span>' . self::escape($clean_title) . '</span>';
     }
 
     public function render_seo($page_seo = []) {
