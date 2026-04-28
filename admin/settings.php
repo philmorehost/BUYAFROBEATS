@@ -81,7 +81,8 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
             <a href="#social">Social</a>
             <a href="#ads">Ads & Analytics</a>
             <a href="#integration">Integrations</a>
-                <a href="#payment">Payments</a>
+            <a href="#auth">Authentication</a>
+            <a href="#payment">Payments</a>
         </div>
 
         <form method="POST">
@@ -202,6 +203,26 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
                     alert('Webhook URL copied to clipboard!');
                 }
                 </script>
+
+            <div id="auth" class="tab-content">
+                <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Google OAuth2</h3>
+                <div class="field">
+                    <label>Google Client ID</label>
+                    <input type="text" name="google_client_id" value="<?php echo Core::escape($core->setting('google_client_id')); ?>" placeholder="your-client-id.apps.googleusercontent.com">
+                </div>
+                <div class="field">
+                    <label>Google Client Secret</label>
+                    <input type="password" name="google_client_secret" value="<?php echo Core::escape($core->setting('google_client_secret')); ?>" placeholder="your-client-secret">
+                </div>
+                <?php
+                    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+                    $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['REQUEST_URI'])) . '/api/google_callback.php';
+                ?>
+                <p style="font-size: 11px; color: var(--ink-mute); margin: 8px 0 0;">
+                    <b>Redirect URI:</b> <code><?php echo Core::escape($redirect_uri); ?></code><br>
+                    Add this to your <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud Console</a>.
+                </p>
+            </div>
 
             <div id="integration" class="tab-content">
                 <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Custom Code Injection</h3>

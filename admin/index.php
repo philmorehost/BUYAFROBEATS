@@ -61,15 +61,15 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
 
 <div class="page">
     <!-- Friendly Download Policy Notice -->
-    <div style="background: color-mix(in oklab, var(--ok) 5%, var(--bg-2)); border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-bottom: 32px; display: flex; align-items: center; gap: 24px; animation: cardIn .4s ease both;">
-        <div style="width: 54px; height: 54px; border-radius: 14px; background: color-mix(in oklab, var(--accent) 15%, transparent); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+    <div style="background: color-mix(in oklab, var(--accent) 5%, var(--bg-2)); border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-bottom: 32px; display: flex; align-items: center; gap: 24px; animation: cardIn .4s ease both;">
+        <div style="width: 54px; height: 54px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </div>
         <div style="flex: 1;">
             <h3 style="margin: 0 0 4px; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em;">Welcome to your Dashboard</h3>
             <p style="margin: 0; font-size: 15px; color: var(--ink-dim); line-height: 1.6;">
                 A friendly reminder: To protect the total exclusivity of our beats, all files are removed from our servers 24 hours after purchase.
-                <span style="color: var(--accent); font-weight: 500;">Please make sure to download and back up your new beats within 24 hours.</span>
+                <span style="color: var(--ink); font-weight: 600;">Please make sure to download and back up your new beats within 24 hours.</span>
             </p>
         </div>
     </div>

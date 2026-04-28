@@ -13,6 +13,11 @@ $title = $site_title . " — exclusive beat auctions";
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <?php
+    $first_letter = strtoupper($site_title[0] ?? 'B');
+    $favicon_svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='#ffa326'/><text x='50%' y='54%' dominant-baseline='central' text-anchor='middle' font-family='Space Grotesk, sans-serif' font-weight='700' font-size='60' fill='#1a1815'>{$first_letter}</text></svg>";
+    ?>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<?php echo rawurlencode($favicon_svg); ?>">
     <?php echo $core->render_seo($page_seo ?? []); ?>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>

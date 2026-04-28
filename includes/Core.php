@@ -19,7 +19,18 @@ class Core {
         require_once $config_file;
         $this->init_db();
         $this->load_settings();
+        $this->init_headers();
         $this->init_session();
+    }
+
+    private function init_headers() {
+        if (!headers_sent()) {
+            header("X-Frame-Options: SAMEORIGIN");
+            header("X-Content-Type-Options: nosniff");
+            header("X-XSS-Protection: 1; mode=block");
+            header("Referrer-Policy: strict-origin-when-cross-origin");
+            header("Content-Security-Policy: default-src 'self' https:; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://accounts.google.com https://www.youtube.com; connect-src 'self' https://accounts.google.com;");
+        }
     }
 
     public static function get_instance() {
