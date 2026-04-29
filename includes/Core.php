@@ -112,6 +112,13 @@ class Core {
         return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
     }
 
+    public function render_favicon() {
+        $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
+        $first_letter = strtoupper($title[0] ?? 'B');
+        $svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='#ffa326'/><text x='50%' y='54%' dominant-baseline='central' text-anchor='middle' font-family='Space Grotesk, sans-serif' font-weight='700' font-size='60' fill='#1a1815'>{$first_letter}</text></svg>";
+        return "data:image/svg+xml," . rawurlencode($svg);
+    }
+
     public function render_logo() {
         $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
 

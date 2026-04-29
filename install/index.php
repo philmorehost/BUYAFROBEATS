@@ -128,6 +128,7 @@ $can_proceed = !in_array(false, $requirements, true);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BUYAFROBEATS — Installer</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<?php echo rawurlencode("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='#ffa326'/><text x='50%' y='54%' dominant-baseline='central' text-anchor='middle' font-family='Space Grotesk, sans-serif' font-weight='700' font-size='60' fill='#1a1815'>B</text></svg>"); ?>">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
