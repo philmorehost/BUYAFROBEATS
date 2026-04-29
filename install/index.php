@@ -75,8 +75,8 @@ $can_proceed = !in_array(false, $requirements, true);
 </head>
 <body>
     <div class="container">
-        <div class="logo"><span class="dot"></span> BUYAFROBEATS</div>
-        <?php if ($stage === 1): ?>
+        <div class="logo"><span class="dot"></span> <span>BUY<span style="color:var(--accent)">AFROBEATS</span></span></div>
+        <?php if ($stage === 1 || empty($stage)): ?>
             <h1>Welcome to the Studio</h1>
             <p>Before we set up your auction platform, let's make sure your server is ready.</p>
             <div class="req-list">
@@ -88,7 +88,9 @@ $can_proceed = !in_array(false, $requirements, true);
                 <?php endforeach; ?>
             </div>
             <a href="?stage=2" class="btn" <?php echo !$can_proceed ? 'disabled onclick="return false;"' : ''; ?>>Start Installation →</a>
-        <?php elseif ($stage === 2): 
+        <?php endif; ?>
+
+        <?php if ($stage === 2):
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db_host = $_POST['db_host'] ?? '';
                 $db_name = $_POST['db_name'] ?? '';
@@ -154,7 +156,9 @@ $can_proceed = !in_array(false, $requirements, true);
                 </div>
                 <button type="submit" class="btn" style="margin-top: 10px;">Connect & Install Schema →</button>
             </form>
-        <?php elseif ($stage === 3): 
+        <?php endif; ?>
+
+        <?php if ($stage === 3):
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $admin_user = $_POST['admin_user'] ?? '';
                 $admin_email = $_POST['admin_email'] ?? '';
@@ -248,7 +252,9 @@ $can_proceed = !in_array(false, $requirements, true);
                 
                 <button type="submit" class="btn" style="margin-top: 10px;">Complete Setup →</button>
             </form>
-        <?php elseif ($stage === 4): ?>
+        <?php endif; ?>
+
+        <?php if ($stage === 4): ?>
             <h1>Congratulations!</h1>
             <p>BUYAFROBEATS is now installed. Your studio is ready for the first drop.</p>
             

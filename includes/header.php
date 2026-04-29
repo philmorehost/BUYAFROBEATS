@@ -5,7 +5,7 @@ require_once __DIR__ . '/Auction.php';
 use BAF\Core;
 
 $core = Core::get_instance();
-$site_title = $core->setting('site_title', 'BUYAFROBEATS');
+$site_title = str_replace(' ', '', $core->setting('site_title', 'BUYAFROBEATS'));
 $title = $site_title . " — exclusive beat auctions";
 ?>
 <!DOCTYPE html>

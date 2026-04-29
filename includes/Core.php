@@ -115,16 +115,18 @@ class Core {
     public function render_logo() {
         $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
 
-        // Get index of first space if it exists, to use as split point
-        $space_index = strpos($title, ' ');
+        // Use a static string for testing if provided (for debugging if needed)
+        // $title = "Beat Zaza";
 
-        // Join title as one word for output
+        // Clean title for joined output
         $clean_title = str_replace(' ', '', $title);
         
+        // Use the original space position as the split point if it existed
+        $space_index = strpos($title, ' ');
+
         $split_at = -1;
 
         if ($space_index !== false) {
-            // Split where the space was
             $split_at = $space_index;
         } else {
             // Find second capital letter (CapLock style)
@@ -156,7 +158,9 @@ class Core {
     }
 
     public function render_seo($page_seo = []) {
-        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $this->setting('site_title', 'BUYAFROBEATS'));
+        $site_title = $this->setting('site_title', 'BUYAFROBEATS');
+        $site_title = str_replace(' ', '', $site_title);
+        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $site_title);
         $desc = !empty($page_seo['description']) ? $page_seo['description'] : $this->setting('global_meta_description', 'Exclusive beat auctions.');
         $keywords = !empty($page_seo['keywords']) ? $page_seo['keywords'] : $this->setting('global_meta_keywords', 'beats, auction, afrobeats');
 
