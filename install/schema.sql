@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS `beats` (
     `current_bid` DECIMAL(10, 2) NOT NULL,
     `top_bidder` VARCHAR(50),
     `audio_path` VARCHAR(255) NOT NULL,
+    `sample_path` VARCHAR(255),
     `ends_at` TIMESTAMP NULL,
     `status` ENUM('live', 'sold', 'expired') DEFAULT 'live',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -48,6 +49,9 @@ CREATE TABLE IF NOT EXISTS `sales` (
     `winner_email` VARCHAR(100) NOT NULL,
     `price` DECIMAL(10, 2) NOT NULL,
     `download_token` VARCHAR(64) UNIQUE,
+    `payment_status` ENUM('pending', 'completed', 'failed', 'expired') DEFAULT 'pending',
+    `plisio_invoice_id` VARCHAR(100),
+    `plisio_invoice_url` TEXT,
     `expires_at` TIMESTAMP NULL,
     `sold_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`beat_id`) REFERENCES `beats`(`id`)

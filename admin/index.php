@@ -6,13 +6,14 @@ use BAF\Core;
 use BAF\Auction;
 
 $core = Core::get_instance();
-if (!$core->is_admin()) {
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
 
+$is_admin = $core->is_admin();
 $auction = new Auction($core);
-$beats = $auction->get_live_beats();
+$beats = $is_admin ? $auction->get_live_beats() : [];
 
 // Stats
 $total_rev = $core->db()->query("SELECT SUM(price) FROM sales")->fetchColumn() ?: 0;
@@ -47,8 +48,10 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
         <a href="../index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
             <a href="index.php" class="tab is-active">Dashboard</a>
-            <a href="upload.php" class="tab">+ Upload Beat</a>
-            <a href="settings.php" class="tab">Settings</a>
+            <?php if ($is_admin): ?>
+                <a href="upload.php" class="tab">+ Upload Beat</a>
+                <a href="settings.php" class="tab">Settings</a>
+            <?php endif; ?>
         </div>
         <div class="spacer"></div>
         <div class="counter"><b>Logged in as <?php echo $_SESSION['username']; ?></b></div>
@@ -57,6 +60,21 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
 </div>
 
 <div class="page">
+    <!-- Friendly Download Policy Notice -->
+    <div style="background: color-mix(in oklab, var(--accent) 5%, var(--bg-2)); border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-bottom: 32px; display: flex; align-items: center; gap: 24px; animation: cardIn .4s ease both;">
+        <div style="width: 54px; height: 54px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        </div>
+        <div style="flex: 1;">
+            <h3 style="margin: 0 0 4px; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em;">Welcome to your Dashboard</h3>
+            <p style="margin: 0; font-size: 15px; color: var(--ink-dim); line-height: 1.6;">
+                A friendly reminder: To protect the total exclusivity of our beats, all files are removed from our servers 24 hours after purchase.
+                <span style="color: var(--ink); font-weight: 600;">Please make sure to download and back up your new beats within 24 hours.</span>
+            </p>
+        </div>
+    </div>
+
+    <?php if ($is_admin): ?>
     <div class="admin-banner"><span style="width:6,height:6,borderRadius:'50%',background:'var(--accent)',display:'inline-block'"></span> Admin · Only you see this</div>
     
     <div style="display:flex; align-items: center; justify-content:space-between; margin-bottom: 24px;">
@@ -94,8 +112,22 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
         </table>
     <?php endif; ?>
 
-    <h3 style="font-size:14px; margin:0 0 12px; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)">Sales Log</h3>
-    <?php if (empty($sales)): ?>
+    <?php endif; // End Admin Check ?>
+
+    <h3 style="font-size:14px; margin:0 0 12px; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)"><?php echo $is_admin ? 'Sales Log' : 'My Purchases'; ?></h3>
+    <?php
+    // If not admin, only show user's own sales
+    if (!$is_admin) {
+        $sales = $core->db()->prepare("SELECT s.*, b.title as beat_title FROM sales s JOIN beats b ON s.beat_id = b.id WHERE s.winner_email = ? ORDER BY sold_at DESC");
+        // We might need the user's email from the session or users table
+        $stmt_user = $core->db()->prepare("SELECT email FROM users WHERE id = ?");
+        $stmt_user->execute([$_SESSION['user_id']]);
+        $user_email = $stmt_user->fetchColumn();
+        $sales->execute([$user_email]);
+        $sales = $sales->fetchAll();
+    }
+
+    if (empty($sales)): ?>
         <div class="empty" style="border: 1px dashed var(--line); border-radius: 18px; padding: 40px; text-align:center;">
             <h3>No sales yet</h3>
             <p>When an auction ends, the delivery record lands here.</p>
@@ -112,7 +144,11 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
                         <td class="mono" style="color:var(--accent)">$<?php echo number_format($s['price'], 2); ?></td>
                         <td class="mono" style="font-size:12px; color:var(--ink-dim)"><?php echo date('M d · H:i', strtotime($s['sold_at'])); ?></td>
                         <td style="text-align:right">
-                            <a href="../api/download.php?token=<?php echo $s['download_token']; ?>" class="btn" style="font-size:10px; padding: 4px 8px;">Download</a>
+                            <?php if ($s['payment_status'] === 'completed'): ?>
+                                <a href="../api/download.php?token=<?php echo $s['download_token']; ?>" class="btn btn-primary" style="font-size:10px; padding: 4px 12px;">Download HQ</a>
+                            <?php else: ?>
+                                <a href="../pay.php?id=<?php echo $s['delivery_id']; ?>" class="btn" style="font-size:10px; padding: 4px 12px;">Pay Now</a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

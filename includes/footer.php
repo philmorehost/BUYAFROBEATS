@@ -29,6 +29,8 @@
                 <div class="footer-nav">
                     <h4>Company</h4>
                     <a href="faqs.php">FAQs</a>
+                    <a href="privacy.php">Privacy Policy</a>
+                    <a href="terms.php">Terms & Conditions</a>
                     <?php 
                     require_once __DIR__ . '/CMS.php';
                     $cms_footer = new \BAF\CMS($core);
@@ -56,49 +58,12 @@
         <div class="footer-bottom">
             <span>&copy; <?php echo date('Y'); ?> <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
             <div class="footer-legal">
-                <a href="index.php">Privacy</a> · <a href="index.php">Terms</a>
+                <a href="privacy.php">Privacy</a> · <a href="terms.php">Terms</a>
             </div>
         </div>
     </div>
 </footer>
 
-<style>
-    .footer { background: #1a1a1a; background: var(--bg-2); border-top: 1px solid var(--line); margin-top: 80px; padding: 80px 0 40px; }
-    .footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 40px; }
-    .footer-grid { display: flex; flex-wrap: wrap; gap: 40px; margin-bottom: 60px; justify-content: space-between; }
-    
-    .footer-col { flex: 1; min-width: 200px; }
-    .footer-col.brand { flex: 1.5; min-width: 280px; }
-    .footer-col.newsletter { flex: 1.5; min-width: 300px; }
-    
-    .footer-brand .logo { margin-bottom: 24px; font-size: 20px; }
-    .footer-brand p { color: var(--ink-mute); font-size: 15px; max-width: 32ch; line-height: 1.7; margin-bottom: 28px; }
-    
-    .footer h4 { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin: 0 0 24px; font-weight: 600; }
-    .footer-nav a { display: block; color: var(--ink-dim); text-decoration: none; font-size: 15px; margin-bottom: 14px; transition: all 0.2s; }
-    .footer-nav a:hover { color: var(--accent); padding-left: 4px; }
-    
-    .footer-newsletter p { color: var(--ink-mute); font-size: 15px; margin-bottom: 20px; line-height: 1.6; }
-    .newsletter-field { display: flex; gap: 10px; background: var(--bg); border: 1px solid var(--line); padding: 6px; border-radius: 12px; }
-    .newsletter-field input { background: transparent; border: 0; padding: 10px 14px; color: var(--ink); flex: 1; font-size: 15px; outline: none; min-width: 0; }
-    .newsletter-field button { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 10px 20px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-    
-    .footer-bottom { border-top: 1px solid var(--line); padding-top: 40px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--ink-mute); }
-    .footer-legal { display: flex; gap: 24px; }
-    .footer-legal a { color: inherit; text-decoration: none; }
-    
-    .social-links { display: flex; gap: 12px; }
-    .social-links a { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink-dim); text-decoration: none; transition: all 0.2s; }
-    .social-links a:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px); }
-
-    @media (max-width: 800px) {
-        .footer-grid { flex-direction: column; gap: 40px; }
-        .footer-col { width: 100%; flex: none; }
-        .footer-bottom { flex-direction: column; gap: 20px; text-align: center; }
-        .footer-legal { justify-content: center; }
-        .newsletter-field { flex-direction: column; }
-    }
-</style>
 
 <script>
     document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {

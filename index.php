@@ -14,6 +14,7 @@ $auction = new Auction($core);
 
 // Check for expired auctions and process winners
 $auction->check_for_winners();
+$auction->cleanup_sold_beats();
 
 $genre = $_GET['genre'] ?? 'All';
 $search = $_GET['search'] ?? '';
@@ -40,6 +41,15 @@ include __DIR__ . '/includes/header.php';
                     <div class="stat-pill"><span class="k">Active bids</span><span class="v"><?php echo $total_bids; ?></span></div>
                     <div class="stat-pill"><span class="k">Timer</span><span class="v">30:00 from first bid</span></div>
                 </div>
+
+                <div style="margin-top: 32px; display: flex; gap: 12px;">
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <a href="admin/index.php" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Enter My Studio →</a>
+                    <?php else: ?>
+                        <a href="register.php" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Join the Auction →</a>
+                        <a href="login.php" class="btn" style="padding: 12px 24px; font-weight: 600;">Sign In</a>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div class="filter-row">
@@ -65,12 +75,14 @@ include __DIR__ . '/includes/header.php';
                 <div class="grid">
                     <?php foreach ($beats as $beat): 
                         $timeLeft = $beat['ends_at'] ? strtotime($beat['ends_at']) - time() : null;
-                        $status = 'live';
-                        if ($beat['ends_at'] && $timeLeft <= 0) $status = 'ending';
-                        elseif ($timeLeft && $timeLeft < 300) $status = 'ending';
-                        elseif ($core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$beat['id']}")->fetchColumn() >= 4) $status = 'hot';
+                        $status = $beat['status'];
+                        if ($status === 'live') {
+                            if ($beat['ends_at'] && $timeLeft <= 0) $status = 'ending';
+                            elseif ($timeLeft && $timeLeft < 300) $status = 'ending';
+                            elseif ($core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$beat['id']}")->fetchColumn() >= 4) $status = 'hot';
+                        }
                     ?>
-                        <div class="card <?php echo $status === 'hot' ? 'is-hot' : ''; ?>" data-id="<?php echo $beat['id']; ?>">
+                        <div class="card <?php echo ($status === 'hot' || $status === 'ending') ? 'is-hot' : ''; ?> <?php echo $status === 'sold' ? 'is-sold' : ''; ?>" data-id="<?php echo $beat['id']; ?>">
                             <div class="cover">
                                 <!-- Waveform/Cover SVG logic -->
                                 <svg class="stripes" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -84,7 +96,7 @@ include __DIR__ . '/includes/header.php';
                                 </svg>
                                 <span class="status <?php echo $status; ?>"><?php echo strtoupper($status); ?></span>
                                 <span class="label"><?php echo $beat['duration']; ?></span>
-                                <button class="play" aria-label="Play">
+                                <button class="play" aria-label="Play" data-sample="<?php echo $beat['sample_path'] ? 'uploads/' . $beat['sample_path'] : ''; ?>">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                                 </button>
                             </div>
@@ -106,13 +118,19 @@ include __DIR__ . '/includes/header.php';
                                 </div>
                                 <div class="card-actions">
                                     <div class="bidstats">
-                                        <?php if (empty($beat['top_bidder'])): ?>
+                                        <?php if ($beat['status'] === 'sold'): ?>
+                                            Sold to <b><?php echo Core::escape($beat['top_bidder']); ?></b>
+                                        <?php elseif (empty($beat['top_bidder'])): ?>
                                             No bids yet · starts at <b>$<?php echo number_format($beat['starting_bid'], 2); ?></b>
                                         <?php else: ?>
                                             <b><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$beat['id']}")->fetchColumn(); ?></b> bids · top <b><?php echo Core::escape($beat['top_bidder']); ?></b>
                                         <?php endif; ?>
                                     </div>
-                                    <button class="btn btn-primary open-bid" data-beat='<?php echo json_encode($beat); ?>'>Place bid</button>
+                                    <?php if ($beat['status'] === 'live'): ?>
+                                        <button class="btn btn-primary open-bid" data-beat='<?php echo json_encode($beat); ?>'>Place bid</button>
+                                    <?php else: ?>
+                                        <button class="btn btn-primary" disabled>SOLD</button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

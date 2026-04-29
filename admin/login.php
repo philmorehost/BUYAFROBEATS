@@ -3,7 +3,7 @@ require_once __DIR__ . '/../includes/Core.php';
 use BAF\Core;
 
 $core = Core::get_instance();
-if ($core->is_admin()) {
+if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'admin') {
     header('Location: index.php');
     exit;
 }
@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $_POST['username'] ?? '';
     $pass = $_POST['password'] ?? '';
 
-    $stmt = $core->db()->prepare("SELECT * FROM users WHERE username = ? OR email = ?");
+    $stmt = $core->db()->prepare("SELECT * FROM users WHERE (username = ? OR email = ?) AND role = 'admin'");
     $stmt->execute([$user, $user]);
     $u = $stmt->fetch();
 
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: index.php');
         exit;
     } else {
-        $error = 'Invalid username or password.';
+        $error = 'Invalid admin credentials.';
     }
 }
 
@@ -50,26 +50,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         h1 { font-size: 24px; margin: 0 0 10px; text-align: center; }
         .field { margin-bottom: 16px; display:flex; flex-direction: column; gap: 6px; }
         .field label { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; }
-        .field input { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--ink); font: inherit; outline: none; }
+        .field input { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--ink); font: inherit; outline: none; width:100%; box-sizing: border-box; }
         .field input:focus { border-color: var(--accent); }
-        .btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; font-family: inherit; }
         .error { color: #ff6b6b; font-size: 13px; text-align: center; margin-bottom: 16px; }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <h1>Studio Login</h1>
+        <h1>Studio Admin</h1>
         <?php if ($error): ?><div class="error"><?php echo $error; ?></div><?php endif; ?>
         <form method="POST">
             <div class="field">
-                <label>Username / Email</label>
+                <label>Admin Username</label>
                 <input type="text" name="username" required autofocus>
             </div>
             <div class="field">
                 <label>Password</label>
                 <input type="password" name="password" required>
             </div>
-            <button type="submit" class="btn">Enter Studio →</button>
+            <button type="submit" class="btn">Login to Studio →</button>
         </form>
     </div>
 </body>

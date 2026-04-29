@@ -19,7 +19,18 @@ class Core {
         require_once $config_file;
         $this->init_db();
         $this->load_settings();
+        $this->init_headers();
         $this->init_session();
+    }
+
+    private function init_headers() {
+        if (!headers_sent()) {
+            header("X-Frame-Options: SAMEORIGIN");
+            header("X-Content-Type-Options: nosniff");
+            header("X-XSS-Protection: 1; mode=block");
+            header("Referrer-Policy: strict-origin-when-cross-origin");
+            header("Content-Security-Policy: default-src 'self' https:; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://accounts.google.com https://www.youtube.com; connect-src 'self' https://accounts.google.com;");
+        }
     }
 
     public static function get_instance() {
@@ -102,33 +113,54 @@ class Core {
     }
 
     public function render_logo() {
-        $title = $this->setting('site_title', 'BUYAFROBEATS');
+        $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
+
+        // Use a static string for testing if provided (for debugging if needed)
+        // $title = "Beat Zaza";
+
+        // Clean title for joined output
+        $clean_title = str_replace(' ', '', $title);
         
-        // Find second capital letter
-        $caps_found = 0;
-        $split_index = -1;
-        
-        for ($i = 0; $i < strlen($title); $i++) {
-            if (ctype_upper($title[$i])) {
-                $caps_found++;
-                if ($caps_found === 2) {
-                    $split_index = $i;
-                    break;
+        // Use the original space position as the split point if it existed
+        $space_index = strpos($title, ' ');
+
+        $split_at = -1;
+
+        if ($space_index !== false) {
+            $split_at = $space_index;
+        } else {
+            // Find second capital letter (CapLock style)
+            $caps_found = 0;
+            for ($i = 0; $i < strlen($clean_title); $i++) {
+                if (ctype_upper($clean_title[$i])) {
+                    $caps_found++;
+                    if ($caps_found === 2) {
+                        $split_at = $i;
+                        break;
+                    }
                 }
             }
+
+            // Special handling for all-caps starting with BUY (e.g., BUYBEATS)
+            if ($split_at === 1 && strpos(strtoupper($clean_title), 'BUY') === 0 && strlen($clean_title) > 3) {
+                $split_at = 3;
+            }
+        }
+
+        if ($split_at > 0 && $split_at < strlen($clean_title)) {
+            $part1 = substr($clean_title, 0, $split_at);
+            $part2 = substr($clean_title, $split_at);
+            // Wrap in a span to prevent parent flexbox 'gap' from separating them
+            return '<span>' . self::escape($part1) . '<span style="color:#ffa326">' . self::escape($part2) . '</span></span>';
         }
         
-        if ($split_index !== -1) {
-            $part1 = substr($title, 0, $split_index);
-            $part2 = substr($title, $split_index);
-            return self::escape($part1) . '<span style="color:#ffa326">' . self::escape($part2) . '</span>';
-        }
-        
-        return self::escape($title);
+        return '<span>' . self::escape($clean_title) . '</span>';
     }
 
     public function render_seo($page_seo = []) {
-        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $this->setting('site_title', 'BUYAFROBEATS'));
+        $site_title = $this->setting('site_title', 'BUYAFROBEATS');
+        $site_title = str_replace(' ', '', $site_title);
+        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $site_title);
         $desc = !empty($page_seo['description']) ? $page_seo['description'] : $this->setting('global_meta_description', 'Exclusive beat auctions.');
         $keywords = !empty($page_seo['keywords']) ? $page_seo['keywords'] : $this->setting('global_meta_keywords', 'beats, auction, afrobeats');
 
