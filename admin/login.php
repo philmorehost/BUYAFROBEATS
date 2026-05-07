@@ -4,7 +4,7 @@ use BAF\Core;
 
 $core = Core::get_instance();
 if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'admin') {
-    header('Location: index.php');
+    header('Location: index');
     exit;
 }
 
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $u['id'];
         $_SESSION['user_role'] = $u['role'];
         $_SESSION['username'] = $u['username'];
-        header('Location: index.php');
+        header('Location: index');
         exit;
     } else {
         $error = 'Invalid admin credentials.';

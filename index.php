@@ -1,5 +1,5 @@
 <?php
-if (!file_exists(__DIR__ . '/config.php')) {
+if (!file_exists(__DIR__ . '/config')) {
     header('Location: ./install/');
     exit;
 }
@@ -44,16 +44,16 @@ include __DIR__ . '/includes/header.php';
 
                 <div style="margin-top: 32px; display: flex; gap: 12px;">
                     <?php if (isset($_SESSION['user_id'])): ?>
-                        <a href="admin/index.php" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Enter My Studio →</a>
+                        <a href="admin/index" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Enter My Studio →</a>
                     <?php else: ?>
-                        <a href="register.php" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Join the Auction →</a>
-                        <a href="login.php" class="btn" style="padding: 12px 24px; font-weight: 600;">Sign In</a>
+                        <a href="register" class="btn btn-primary" style="padding: 12px 24px; font-weight: 600;">Join the Auction →</a>
+                        <a href="login" class="btn" style="padding: 12px 24px; font-weight: 600;">Sign In</a>
                     <?php endif; ?>
                 </div>
             </div>
 
             <div class="filter-row">
-                <form action="index.php" method="GET" style="display: contents;">
+                <form action="index" method="GET" style="display: contents;">
                     <div class="search">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-mute)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
                         <input name="search" placeholder="Search title or genre…" value="<?php echo Core::escape($search); ?>">

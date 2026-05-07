@@ -9,7 +9,7 @@ $core = Core::get_instance();
 if (!$core->is_admin()) {
     // If we can't even check admin because session is broken, 
     // we'll just check if the config exists.
-    if (!file_exists(__DIR__ . '/config.php')) {
+    if (!file_exists(__DIR__ . '/config')) {
         die("Please install the site first.");
     }
 }
@@ -61,5 +61,5 @@ foreach ($queries as $sql) {
 
 echo "</ul>";
 echo "<p><b>Update complete!</b> you can now use the CMS, FAQs, and Newsletter features.</p>";
-echo "<p><a href='index.php'>Go to Homepage</a> | <a href='admin/index.php'>Go to Admin</a></p>";
+echo "<p><a href='index'>Go to Homepage</a> | <a href='admin/index'>Go to Admin</a></p>";
 echo "<p style='color:gray; font-size:12px;'>Please delete this file (update.php) after use for security.</p>";

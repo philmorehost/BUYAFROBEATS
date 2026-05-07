@@ -4,7 +4,7 @@ use BAF\Core;
 
 $core = Core::get_instance();
 if (!$core->is_admin()) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
@@ -55,15 +55,15 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
-            <a href="index.php" class="tab">Dashboard</a>
-            <a href="pages.php" class="tab">Pages</a>
-            <a href="upload.php" class="tab">+ Upload Beat</a>
-            <a href="settings.php" class="tab is-active">Settings</a>
+            <a href="index" class="tab">Dashboard</a>
+            <a href="pages" class="tab">Pages</a>
+            <a href="upload" class="tab">+ Upload Beat</a>
+            <a href="settings" class="tab is-active">Settings</a>
         </div>
         <div class="spacer"></div>
-        <a href="logout.php" class="tab" style="font-size: 11px;">Logout</a>
+        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
     </div>
 </div>
 
@@ -183,7 +183,8 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
 
                     <?php
                         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-                        $webhook_url = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['REQUEST_URI'])) . '/api/webhook_plisio.php';
+                        $base_path = rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/\\');
+                        $webhook_url = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/webhook_plisio';
                     ?>
                     <div class="field" style="margin-top: 24px;">
                         <label>Status URL (Webhook)</label>
@@ -216,7 +217,8 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
                 </div>
                 <?php
                     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-                    $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['REQUEST_URI'])) . '/api/google_callback.php';
+                    $base_path = rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/\\');
+                    $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/google_callback';
                 ?>
                 <p style="font-size: 11px; color: var(--ink-mute); margin: 8px 0 0;">
                     <b>Redirect URI:</b> <code><?php echo Core::escape($redirect_uri); ?></code><br>

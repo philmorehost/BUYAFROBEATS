@@ -62,7 +62,7 @@ include __DIR__ . '/includes/header.php';
         </div>
 
         <div style="margin-top: 40px; text-align: center; color: var(--ink-dim);">
-            <p>Still have questions? <a href="terms.php" style="color: var(--accent);">Read our full Terms & Conditions</a></p>
+            <p>Still have questions? <a href="terms" style="color: var(--accent);">Read our full Terms & Conditions</a></p>
         </div>
     </div>
 </div>

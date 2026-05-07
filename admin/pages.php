@@ -7,7 +7,7 @@ use BAF\CMS;
 
 $core = Core::get_instance();
 if (!$core->is_admin()) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
@@ -86,15 +86,15 @@ $edit_page = ($action === 'edit' && $id) ? array_filter($pages, fn($p) => $p['id
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
-            <a href="index.php" class="tab">Dashboard</a>
-            <a href="pages.php" class="tab is-active">Pages</a>
-            <a href="upload.php" class="tab">+ Upload Beat</a>
-            <a href="settings.php" class="tab">Settings</a>
+            <a href="index" class="tab">Dashboard</a>
+            <a href="pages" class="tab is-active">Pages</a>
+            <a href="upload" class="tab">+ Upload Beat</a>
+            <a href="settings" class="tab">Settings</a>
         </div>
         <div class="spacer"></div>
-        <a href="logout.php" class="tab" style="font-size: 11px;">Logout</a>
+        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
     </div>
 </div>
 
@@ -104,7 +104,7 @@ $edit_page = ($action === 'edit' && $id) ? array_filter($pages, fn($p) => $p['id
         <?php if ($action === 'list'): ?>
             <a href="?action=create" class="btn btn-primary">+ Create Page</a>
         <?php else: ?>
-            <a href="pages.php" class="btn btn-ghost">← Back to List</a>
+            <a href="pages" class="btn btn-ghost">← Back to List</a>
         <?php endif; ?>
     </div>
 

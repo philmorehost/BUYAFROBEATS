@@ -19,7 +19,8 @@ if (!$client_id || !$client_secret) {
 
 // 2. Exchange code for access token
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/google_callback.php';
+$base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+$redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/google_callback';
 
 $ch = curl_init('https://oauth2.googleapis.com/token');
 curl_setopt($ch, CURLOPT_POST, true);
@@ -80,5 +81,5 @@ $_SESSION['user_id'] = $user['id'];
 $_SESSION['user_role'] = $user['role'];
 $_SESSION['username'] = $user['username'];
 
-header('Location: ../admin/index.php');
+header('Location: ../admin/index');
 exit;

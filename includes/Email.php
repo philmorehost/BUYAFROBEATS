@@ -90,7 +90,8 @@ class Email {
 
     private function get_site_url() {
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-        return $protocol . "://" . $_SERVER['HTTP_HOST'] . str_replace(['/api', '/admin'], '', dirname($_SERVER['REQUEST_URI']));
+        $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+        return $protocol . "://" . $_SERVER['HTTP_HOST'] . str_replace(['/api', '/admin'], '', $base_path);
     }
 
     private function wrap_template($content) {

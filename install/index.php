@@ -1,9 +1,9 @@
 <?php
 session_start();
 
-$config_file = __DIR__ . '/../config.php';
+$config_file = __DIR__ . '/../config';
 if (file_exists($config_file)) {
-    header('Location: ../index.php');
+    header('Location: ../index');
     exit;
 }
 
@@ -90,7 +90,7 @@ if ($stage === 3 && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     . "// Security Salt\n"
                     . "define('AUTH_SALT', '" . bin2hex(random_bytes(32)) . "');\n";
 
-                file_put_contents(__DIR__ . '/../config.php', $config_content);
+                file_put_contents(__DIR__ . '/../config', $config_content);
 
                 header('Location: ?stage=4');
                 exit;
@@ -267,7 +267,7 @@ $can_proceed = !in_array(false, $requirements, true);
                 </ul>
             </div>
 
-            <a href="../index.php" class="btn">Go to Marketplace →</a>
+            <a href="../index" class="btn">Go to Marketplace →</a>
         <?php endif; ?>
 
         <div class="steps">

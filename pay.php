@@ -17,7 +17,7 @@ if (!$sale) {
 }
 
 if ($sale['payment_status'] === 'completed') {
-    header("Location: api/download.php?token=" . $sale['download_token']);
+    header("Location: api/download?token=" . $sale['download_token']);
     exit;
 }
 
@@ -31,14 +31,15 @@ $plisio = new Plisio($plisio_api_key);
 // If invoice doesn't exist, create it
 if (empty($sale['plisio_invoice_id'])) {
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-    $base_url = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
+    $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+    $base_url = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path;
 
     $invoice_data = [
         'source_currency' => 'USD',
         'source_amount' => $sale['price'],
         'order_number' => $sale['delivery_id'],
         'order_name' => 'Beat: ' . $sale['title'],
-        'callback_url' => $base_url . '/api/webhook_plisio.php',
+        'callback_url' => $base_url . '/api/webhook_plisio',
         'success_url' => $base_url . '/pay.php?id=' . $sale['delivery_id'] . '&status=success',
         'email' => $sale['winner_email']
     ];

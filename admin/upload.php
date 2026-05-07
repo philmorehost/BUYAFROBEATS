@@ -7,7 +7,7 @@ use BAF\Storage;
 
 $core = Core::get_instance();
 if (!$core->is_admin()) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
@@ -63,14 +63,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
-            <a href="index.php" class="tab">Dashboard</a>
-            <a href="upload.php" class="tab is-active">+ Upload Beat</a>
-            <a href="settings.php" class="tab">Settings</a>
+            <a href="index" class="tab">Dashboard</a>
+            <a href="upload" class="tab is-active">+ Upload Beat</a>
+            <a href="settings" class="tab">Settings</a>
         </div>
         <div class="spacer"></div>
-        <a href="logout.php" class="tab" style="font-size: 11px;">Logout</a>
+        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
     </div>
 </div>
 
@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="actions" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
-                <a href="index.php" class="btn btn-ghost">Cancel</a>
+                <a href="index" class="btn btn-ghost">Cancel</a>
                 <button type="submit" class="btn btn-primary">Put it live →</button>
             </div>
         </form>

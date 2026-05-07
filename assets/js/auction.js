@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(bidForm);
         
         try {
-            const res = await fetch('api/bid.php', {
+            const res = await fetch('api/bid', {
                 method: 'POST',
                 body: formData
             });
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // SSE Integration
-    const evtSource = new EventSource('api/stream.php');
+    const evtSource = new EventSource('api/stream');
     
     evtSource.addEventListener('activity', (e) => {
         const act = JSON.parse(e.data);

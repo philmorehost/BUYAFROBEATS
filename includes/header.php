@@ -25,14 +25,14 @@ $title = $site_title . " — exclusive beat auctions";
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ live auctions</span></a>
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ live auctions</span></a>
         <div class="tabs">
-            <a href="index.php" class="tab is-active">Auctions</a>
+            <a href="index" class="tab is-active">Auctions</a>
             <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="admin/index.php" class="tab admin">Enter Studio</a>
+                <a href="admin/index" class="tab admin">Enter Studio</a>
             <?php else: ?>
-                <a href="register.php" class="tab">Signup</a>
-                <a href="login.php" class="tab">Login</a>
+                <a href="register" class="tab">Signup</a>
+                <a href="login" class="tab">Login</a>
             <?php endif; ?>
         </div>
         <div class="spacer"></div>

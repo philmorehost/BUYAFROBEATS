@@ -12,7 +12,7 @@ $slug = $_GET['slug'] ?? '';
 $page = $cms->get_page($slug);
 
 if (!$page || $page['is_external']) {
-    header('Location: index.php');
+    header('Location: index');
     exit;
 }
 

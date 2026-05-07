@@ -7,7 +7,7 @@ use BAF\Auction;
 
 $core = Core::get_instance();
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
@@ -45,17 +45,17 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="../index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
+        <a href="../index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
-            <a href="index.php" class="tab is-active">Dashboard</a>
+            <a href="index" class="tab is-active">Dashboard</a>
             <?php if ($is_admin): ?>
-                <a href="upload.php" class="tab">+ Upload Beat</a>
-                <a href="settings.php" class="tab">Settings</a>
+                <a href="upload" class="tab">+ Upload Beat</a>
+                <a href="settings" class="tab">Settings</a>
             <?php endif; ?>
         </div>
         <div class="spacer"></div>
         <div class="counter"><b>Logged in as <?php echo $_SESSION['username']; ?></b></div>
-        <a href="logout.php" class="tab" style="font-size: 11px;">Logout</a>
+        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
     </div>
 </div>
 
@@ -79,7 +79,7 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
     
     <div style="display:flex; align-items: center; justify-content:space-between; margin-bottom: 24px;">
         <h2 style="margin:0; font-size:28px; letter-spacing:-0.02em;">Studio Overview</h2>
-        <a href="upload.php" class="btn btn-primary">+ Upload new beat</a>
+        <a href="upload" class="btn btn-primary">+ Upload new beat</a>
     </div>
 
     <div class="stat-grid">
@@ -145,9 +145,9 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
                         <td class="mono" style="font-size:12px; color:var(--ink-dim)"><?php echo date('M d · H:i', strtotime($s['sold_at'])); ?></td>
                         <td style="text-align:right">
                             <?php if ($s['payment_status'] === 'completed'): ?>
-                                <a href="../api/download.php?token=<?php echo $s['download_token']; ?>" class="btn btn-primary" style="font-size:10px; padding: 4px 12px;">Download HQ</a>
+                                <a href="../api/download?token=<?php echo $s['download_token']; ?>" class="btn btn-primary" style="font-size:10px; padding: 4px 12px;">Download HQ</a>
                             <?php else: ?>
-                                <a href="../pay.php?id=<?php echo $s['delivery_id']; ?>" class="btn" style="font-size:10px; padding: 4px 12px;">Pay Now</a>
+                                <a href="../pay?id=<?php echo $s['delivery_id']; ?>" class="btn" style="font-size:10px; padding: 4px 12px;">Pay Now</a>
                             <?php endif; ?>
                         </td>
                     </tr>

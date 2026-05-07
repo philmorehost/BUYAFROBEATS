@@ -19,23 +19,23 @@
             <div class="footer-col">
                 <div class="footer-nav">
                     <h4>Marketplace</h4>
-                    <a href="index.php">Browse All</a>
-                    <a href="index.php?genre=Afrobeats">Afrobeats</a>
-                    <a href="index.php?genre=Amapiano">Amapiano</a>
+                    <a href="index">Browse All</a>
+                    <a href="index?genre=Afrobeats">Afrobeats</a>
+                    <a href="index?genre=Amapiano">Amapiano</a>
                 </div>
             </div>
 
             <div class="footer-col">
                 <div class="footer-nav">
                     <h4>Company</h4>
-                    <a href="faqs.php">FAQs</a>
-                    <a href="privacy.php">Privacy Policy</a>
-                    <a href="terms.php">Terms & Conditions</a>
+                    <a href="faqs">FAQs</a>
+                    <a href="privacy">Privacy Policy</a>
+                    <a href="terms">Terms & Conditions</a>
                     <?php 
                     require_once __DIR__ . '/CMS.php';
                     $cms_footer = new \BAF\CMS($core);
                     foreach ($cms_footer->get_all_pages() as $fp): 
-                        $href = $fp['is_external'] ? $fp['external_url'] : "page.php?slug=".$fp['slug'];
+                        $href = $fp['is_external'] ? $fp['external_url'] : "page?slug=".$fp['slug'];
                     ?>
                         <a href="<?php echo Core::escape($href); ?>"><?php echo Core::escape($fp['title']); ?></a>
                     <?php endforeach; ?>
@@ -58,7 +58,7 @@
         <div class="footer-bottom">
             <span>&copy; <?php echo date('Y'); ?> <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
             <div class="footer-legal">
-                <a href="privacy.php">Privacy</a> · <a href="terms.php">Terms</a>
+                <a href="privacy">Privacy</a> · <a href="terms">Terms</a>
             </div>
         </div>
     </div>
@@ -73,7 +73,7 @@
         const formData = new FormData(form);
         
         try {
-            const res = await fetch('api/subscribe.php', { method: 'POST', body: formData });
+            const res = await fetch('api/subscribe', { method: 'POST', body: formData });
             const data = await res.json();
             msg.innerText = data.message || data.error;
             msg.style.color = data.success ? 'var(--ok)' : 'var(--danger)';

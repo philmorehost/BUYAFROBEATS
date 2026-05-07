@@ -4,7 +4,7 @@ use BAF\Core;
 
 $core = Core::get_instance();
 if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
+    header('Location: index');
     exit;
 }
 
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $u['id'];
         $_SESSION['user_role'] = $u['role'];
         $_SESSION['username'] = $u['username'];
-        header('Location: admin/index.php');
+        header('Location: admin/index');
         exit;
     } else {
         $error = 'Invalid username or password.';
@@ -76,7 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $google_id = $core->setting('google_client_id');
         if ($google_id):
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/api/google_callback.php';
+            $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/google_callback';
             $google_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
                 'client_id' => $google_id,
                 'redirect_uri' => $redirect_uri,
@@ -96,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </a>
         <?php endif; ?>
 
-        <div style="text-align: center; margin-top: 20px; font-size: 13px; color: var(--ink-dim);">Don't have an account? <a href="register.php" style="color: var(--accent); text-decoration: none; font-weight: 600;">Sign up</a></div>
+        <div style="text-align: center; margin-top: 20px; font-size: 13px; color: var(--ink-dim);">Don't have an account? <a href="register" style="color: var(--accent); text-decoration: none; font-weight: 600;">Sign up</a></div>
     </div>
 </body>
 </html>

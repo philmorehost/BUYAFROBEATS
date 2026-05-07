@@ -4,7 +4,7 @@ use BAF\Core;
 
 $core = Core::get_instance();
 if (isset($_SESSION['user_id'])) {
-    header('Location: admin/index.php');
+    header('Location: admin/index');
     exit;
 }
 
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id'] = $uid;
                 $_SESSION['user_role'] = 'user';
                 $_SESSION['username'] = $user;
-                header('Location: index.php');
+                header('Location: index');
                 exit;
             } else {
                 $error = 'Registration failed. Please try again.';
@@ -100,7 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $google_id = $core->setting('google_client_id');
         if ($google_id):
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/api/google_callback.php';
+            $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/google_callback';
             $google_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
                 'client_id' => $google_id,
                 'redirect_uri' => $redirect_uri,
@@ -120,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </a>
         <?php endif; ?>
 
-        <div class="switch">Already have an account? <a href="login.php">Log in</a></div>
+        <div class="switch">Already have an account? <a href="login">Log in</a></div>
     </div>
 </body>
 </html>
