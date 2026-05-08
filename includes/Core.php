@@ -120,7 +120,7 @@ class Core {
     }
 
     public function render_logo() {
-        $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
+        $title = trim($this->setting('site_title', 'Beat Zaza'));
         
         // Find where to split the color
         $split_at = -1;

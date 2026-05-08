@@ -4,7 +4,6 @@
             <div class="footer-col brand">
                 <div class="footer-brand">
                     <div class="logo"><?php echo $core->render_logo(); ?></div>
-                    <h4>About</h4>
                     <p>One-of-one beats. Exclusive rights. The clock is ticking.</p>
                     <div class="social-links">
                         <?php if($ig = $core->setting('social_instagram')): ?>
@@ -41,18 +40,18 @@
                     <a href="terms">Terms & Conditions</a>
                     <?php 
                     try {
-                        require_once __DIR__ . '/CMS.php';
-                        $cms_footer = new \BAF\CMS($core);
-                        $footer_pages = $cms_footer->get_all_pages();
-                        foreach ($footer_pages as $fp):
-                            $href = $fp['is_external'] ? $fp['external_url'] : "page?slug=".$fp['slug'];
-                    ?>
-                        <a href="<?php echo Core::escape($href); ?>"><?php echo Core::escape($fp['title']); ?></a>
-                    <?php
-                        endforeach;
-                    } catch (\Exception $e) {
-                        // DB might not be ready during install, skip dynamic pages
-                    }
+                        if ($core->db()) {
+                            require_once __DIR__ . '/CMS.php';
+                            $cms_footer = new \BAF\CMS($core);
+                            $footer_pages = $cms_footer->get_all_pages();
+                            foreach ($footer_pages as $fp):
+                                $href = $fp['is_external'] ? $fp['external_url'] : "page?slug=".$fp['slug'];
+                        ?>
+                            <a href="<?php echo Core::escape($href); ?>"><?php echo Core::escape($fp['title']); ?></a>
+                        <?php
+                            endforeach;
+                        }
+                    } catch (\Exception $e) {}
                     ?>
                 </div>
             </div>
