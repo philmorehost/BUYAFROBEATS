@@ -26,18 +26,18 @@
             <div class="footer-col">
                 <div class="footer-nav">
                     <h4>Marketplace</h4>
-                    <a href="index">Browse All</a>
-                    <a href="index?genre=Afrobeats">Afrobeats</a>
-                    <a href="index?genre=Amapiano">Amapiano</a>
+                    <a href="/index">Browse All</a>
+                    <a href="/index?genre=Afrobeats">Afrobeats</a>
+                    <a href="/index?genre=Amapiano">Amapiano</a>
                 </div>
             </div>
 
             <div class="footer-col">
                 <div class="footer-nav">
                     <h4>Company</h4>
-                    <a href="faqs">FAQs</a>
-                    <a href="privacy">Privacy Policy</a>
-                    <a href="terms">Terms & Conditions</a>
+                    <a href="/faqs">FAQs</a>
+                    <a href="/privacy">Privacy Policy</a>
+                    <a href="/terms">Terms & Conditions</a>
                     <?php 
                     try {
                         if ($core->db()) {
@@ -51,7 +51,7 @@
                         <?php
                             endforeach;
                         }
-                    } catch (\Exception $e) {}
+                    } catch (\Throwable $e) {}
                     ?>
                 </div>
             </div>
@@ -72,7 +72,7 @@
         <div class="footer-bottom">
             <span>&copy; <?php echo date('Y'); ?> <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
             <div class="footer-legal">
-                <a href="privacy">Privacy</a> · <a href="terms">Terms</a>
+                <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>
             </div>
         </div>
     </div>
