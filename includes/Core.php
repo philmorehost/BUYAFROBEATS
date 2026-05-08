@@ -121,25 +121,18 @@ class Core {
 
     public function render_logo() {
         $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
-
-        // Use a static string for testing if provided (for debugging if needed)
-        // $title = "Beat Zaza";
-
-        // Clean title for joined output
-        $clean_title = str_replace(' ', '', $title);
         
-        // Use the original space position as the split point if it existed
-        $space_index = strpos($title, ' ');
-
+        // Find where to split the color
         $split_at = -1;
+        $space_index = strpos($title, ' ');
 
         if ($space_index !== false) {
             $split_at = $space_index;
         } else {
-            // Find second capital letter (CapLock style)
+            // Find second capital letter (CamelCase)
             $caps_found = 0;
-            for ($i = 0; $i < strlen($clean_title); $i++) {
-                if (ctype_upper($clean_title[$i])) {
+            for ($i = 0; $i < strlen($title); $i++) {
+                if (ctype_upper($title[$i])) {
                     $caps_found++;
                     if ($caps_found === 2) {
                         $split_at = $i;
@@ -148,20 +141,19 @@ class Core {
                 }
             }
 
-            // Special handling for all-caps starting with BUY (e.g., BUYBEATS)
-            if ($split_at === 1 && strpos(strtoupper($clean_title), 'BUY') === 0 && strlen($clean_title) > 3) {
+            // Fallback for names like BUYBEATS
+            if ($split_at === -1 && strpos(strtoupper($title), 'BUY') === 0 && strlen($title) > 3) {
                 $split_at = 3;
             }
         }
 
-        if ($split_at > 0 && $split_at < strlen($clean_title)) {
-            $part1 = substr($clean_title, 0, $split_at);
-            $part2 = substr($clean_title, $split_at);
-            // Wrap in a span to prevent parent flexbox 'gap' from separating them
-            return '<span>' . self::escape($part1) . '<span style="color:#ffa326">' . self::escape($part2) . '</span></span>';
+        if ($split_at > 0 && $split_at < strlen($title)) {
+            $part1 = substr($title, 0, $split_at);
+            $part2 = substr($title, $split_at);
+            return '<span>' . self::escape($part1) . '<span style="color:var(--accent)">' . self::escape($part2) . '</span></span>';
         }
         
-        return '<span>' . self::escape($clean_title) . '</span>';
+        return '<span>' . self::escape($title) . '</span>';
     }
 
     public function render_seo($page_seo = []) {

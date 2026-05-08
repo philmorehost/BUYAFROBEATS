@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-$config_file = __DIR__ . '/../config';
+$config_file = __DIR__ . '/../config.php';
 if (file_exists($config_file)) {
     header('Location: ../index');
     exit;
@@ -90,7 +90,7 @@ if ($stage === 3 && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     . "// Security Salt\n"
                     . "define('AUTH_SALT', '" . bin2hex(random_bytes(32)) . "');\n";
 
-                file_put_contents(__DIR__ . '/../config', $config_content);
+                file_put_contents(__DIR__ . '/../config.php', $config_content);
 
                 header('Location: ?stage=4');
                 exit;

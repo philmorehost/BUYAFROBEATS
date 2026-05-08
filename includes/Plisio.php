@@ -48,14 +48,16 @@ class Plisio {
         unset($data['verify_hash']);
         ksort($data);
 
-        if (isset($data['expire_utc'])) {
-            $data['expire_utc'] = (string)$data['expire_utc'];
+        $postString = '';
+        foreach ($data as $key => $value) {
+            // Decoded values are expected for tx_urls and similar fields
+            if ($key === 'tx_urls') {
+                $value = html_entity_decode($value);
+            }
+            $postString .= $key . '=' . $value . '&';
         }
-        if (isset($data['tx_urls'])) {
-            $data['tx_urls'] = html_entity_decode($data['tx_urls']);
-        }
+        $postString = rtrim($postString, '&');
 
-        $postString = serialize($data);
         $checkKey = hash_hmac('sha1', $postString, $this->api_key);
 
         return hash_equals($checkKey, $verifyHash);

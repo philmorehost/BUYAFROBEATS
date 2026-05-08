@@ -53,16 +53,18 @@ include __DIR__ . '/includes/header.php';
             </div>
 
             <div class="filter-row">
-                <form action="index" method="GET" style="display: contents;">
+                <form action="index" method="GET" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1;">
                     <div class="search">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-mute)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
                         <input name="search" placeholder="Search title or genre…" value="<?php echo Core::escape($search); ?>">
                     </div>
-                    <?php 
-                    $genres = ['All', 'Afrobeats', 'Amapiano', 'Afro-Swing', 'Afro-House', 'Afro-Fusion', 'Afro-Pop'];
-                    foreach ($genres as $g): ?>
-                        <a href="?genre=<?php echo urlencode($g); ?>" class="chip <?php echo $genre === $g ? 'is-active' : ''; ?>"><?php echo $g; ?></a>
-                    <?php endforeach; ?>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <?php
+                        $genres = ['All', 'Afrobeats', 'Amapiano', 'Afro-Swing', 'Afro-House', 'Afro-Fusion', 'Afro-Pop'];
+                        foreach ($genres as $g): ?>
+                            <a href="?genre=<?php echo urlencode($g); ?>" class="chip <?php echo $genre === $g ? 'is-active' : ''; ?>"><?php echo $g; ?></a>
+                        <?php endforeach; ?>
+                    </div>
                 </form>
             </div>
 

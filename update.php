@@ -9,7 +9,7 @@ $core = Core::get_instance();
 if (!$core->is_admin()) {
     // If we can't even check admin because session is broken, 
     // we'll just check if the config exists.
-    if (!file_exists(__DIR__ . '/config')) {
+    if (!file_exists(__DIR__ . '/config.php')) {
         die("Please install the site first.");
     }
 }
