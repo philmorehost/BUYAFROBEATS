@@ -269,9 +269,9 @@ body { min-height: 100vh; }
 .content blockquote { border-left: 3px solid var(--accent); padding-left: 20px; margin: 32px 0; color: var(--ink); font-style: italic; }
 
 /* Footer */
-.footer { background: var(--bg-2); border-top: 1px solid var(--line); margin-top: 80px; padding: 80px 0 40px; }
+.footer { background: var(--bg-2); border-top: 1px solid var(--line); margin-top: 80px; padding: 80px 0 40px; display: block !important; }
 .footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 40px; }
-.footer-grid { display: flex; flex-wrap: wrap; gap: 40px; margin-bottom: 60px; justify-content: space-between; }
+.footer-grid { display: flex; flex-wrap: wrap; gap: 40px; margin-bottom: 60px; justify-content: space-between; display: flex !important; }
 .footer-col { flex: 1; min-width: 200px; }
 .footer-col.brand { flex: 1.5; min-width: 280px; }
 .footer-col.newsletter { flex: 1.5; min-width: 300px; }

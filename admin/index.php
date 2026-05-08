@@ -75,7 +75,7 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
     </div>
 
     <?php if ($is_admin): ?>
-    <div class="admin-banner"><span style="width:6,height:6,borderRadius:'50%',background:'var(--accent)',display:'inline-block'"></span> Admin · Only you see this</div>
+    <div class="admin-banner"><span style="width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block;"></span> Admin · Only you see this</div>
     
     <div style="display:flex; align-items: center; justify-content:space-between; margin-bottom: 24px;">
         <h2 style="margin:0; font-size:28px; letter-spacing:-0.02em;">Studio Overview</h2>

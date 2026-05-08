@@ -4,6 +4,7 @@
             <div class="footer-col brand">
                 <div class="footer-brand">
                     <div class="logo"><?php echo $core->render_logo(); ?></div>
+                    <h4>About</h4>
                     <p>One-of-one beats. Exclusive rights. The clock is ticking.</p>
                     <div class="social-links">
                         <?php if($ig = $core->setting('social_instagram')): ?>
