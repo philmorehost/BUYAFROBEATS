@@ -9,13 +9,9 @@ class Email {
     }
 
     public function send($to, $subject, $message) {
-        $host = $this->core->setting('smtp_host');
-        $port = $this->core->setting('smtp_port');
-        $user = $this->core->setting('smtp_user');
-        $pass = $this->core->setting('smtp_pass');
         $from = $this->core->setting('smtp_from', 'no-reply@buyafrobeats.com');
 
-        if (empty($host)) {
+        if (empty($this->core->setting('smtp_host'))) {
             // Fallback to mail() if no SMTP configured
             $headers = "From: $from\r\n";
             $headers .= "MIME-Version: 1.0\r\n";
