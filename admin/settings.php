@@ -19,6 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     foreach ($_POST as $key => $value) {
         if ($key === 'csrf_token') continue;
+        
+        // Don't overwrite with empty if we want to keep the default, 
+        // except for specific fields that SHOULD be clearable.
+        $can_be_empty = ['social_instagram', 'social_twitter', 'social_youtube', 'google_adsense_client', 'ads_txt', 'header_injection', 'footer_injection'];
+        if (empty($value) && !in_array($key, $can_be_empty)) continue;
+
         $stmt->execute([$key, $value, $value]);
     }
 
@@ -28,8 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $success = "Settings updated successfully!";
-    // Refresh settings in memory
-    $core = Core::get_instance(); 
+    // Force reload to refresh Core instance settings
+    header("Location: settings?success=1");
+    exit;
+}
+
+if (isset($_GET['success'])) {
+    $success = "Settings updated successfully!";
 }
 
 $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DIR__ . '/../ads.txt') : '';
