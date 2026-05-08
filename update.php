@@ -61,5 +61,5 @@ foreach ($queries as $sql) {
 
 echo "</ul>";
 echo "<p><b>Update complete!</b> you can now use the CMS, FAQs, and Newsletter features.</p>";
-echo "<p><a href='index.php'>Go to Homepage</a> | <a href='admin/index.php'>Go to Admin</a></p>";
+echo "<p><a href='index'>Go to Homepage</a> | <a href='admin/index'>Go to Admin</a></p>";
 echo "<p style='color:gray; font-size:12px;'>Please delete this file (update.php) after use for security.</p>";

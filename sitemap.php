@@ -1,36 +1,26 @@
 <?php
-require_once __DIR__ . '/includes/Core.php';
-require_once __DIR__ . '/includes/CMS.php';
-require_once __DIR__ . '/includes/Auction.php';
+header("Content-Type: application/xml; charset=utf-8");
 
-use BAF\Core;
-use BAF\CMS;
-use BAF\Auction;
-
-$core = Core::get_instance();
-$cms = new CMS($core);
-$auction = new Auction($core);
-
-header('Content-Type: application/xml; charset=utf-8');
+$base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+$base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $base_path;
+$base_url = rtrim($base_url, '/\\');
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
 echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
 
-$base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']);
-$base_url = rtrim($base_url, '/\\');
-
 // Home
-echo '  <url><loc>' . $base_url . '/index.php</loc><priority>1.0</priority></url>' . PHP_EOL;
+echo '  <url>' . PHP_EOL;
+echo '    <loc>' . $base_url . '/</loc>' . PHP_EOL;
+echo '    <priority>1.0</priority>' . PHP_EOL;
+echo '  </url>' . PHP_EOL;
 
-// CMS Pages
-foreach ($cms->get_all_pages() as $page) {
-    if (!$page['is_external']) {
-        echo '  <url><loc>' . $base_url . '/page.php?slug=' . $page['slug'] . '</loc><priority>0.8</priority></url>' . PHP_EOL;
-    }
+// Internal pages
+$pages = ['login', 'register', 'faqs', 'privacy', 'terms'];
+foreach ($pages as $p) {
+    echo '  <url>' . PHP_EOL;
+    echo '    <loc>' . $base_url . '/' . $p . '</loc>' . PHP_EOL;
+    echo '    <priority>0.8</priority>' . PHP_EOL;
+    echo '  </url>' . PHP_EOL;
 }
-
-// Beats (if you have individual beat pages, but currently you only have the home page with auctions)
-// For now, just add FAQs
-echo '  <url><loc>' . $base_url . '/faqs.php</loc><priority>0.5</priority></url>' . PHP_EOL;
 
 echo '</urlset>';

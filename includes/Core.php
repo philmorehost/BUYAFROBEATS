@@ -19,7 +19,18 @@ class Core {
         require_once $config_file;
         $this->init_db();
         $this->load_settings();
+        $this->init_headers();
         $this->init_session();
+    }
+
+    private function init_headers() {
+        if (!headers_sent()) {
+            header("X-Frame-Options: SAMEORIGIN");
+            header("X-Content-Type-Options: nosniff");
+            header("X-XSS-Protection: 1; mode=block");
+            header("Referrer-Policy: strict-origin-when-cross-origin");
+            header("Content-Security-Policy: default-src 'self' https:; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://accounts.google.com https://www.youtube.com; connect-src 'self' https://accounts.google.com;");
+        }
     }
 
     public static function get_instance() {
@@ -101,34 +112,54 @@ class Core {
         return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
     }
 
+    public function render_favicon() {
+        $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
+        $first_letter = strtoupper($title[0] ?? 'B');
+        $svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='#ffa326'/><text x='50%' y='54%' dominant-baseline='central' text-anchor='middle' font-family='Space Grotesk, sans-serif' font-weight='700' font-size='60' fill='#1a1815'>{$first_letter}</text></svg>";
+        return "data:image/svg+xml," . rawurlencode($svg);
+    }
+
     public function render_logo() {
-        $title = $this->setting('site_title', 'BUYAFROBEATS');
+        $title = trim($this->setting('site_title', 'Beat Zaza'));
         
-        // Find second capital letter
-        $caps_found = 0;
-        $split_index = -1;
-        
-        for ($i = 0; $i < strlen($title); $i++) {
-            if (ctype_upper($title[$i])) {
-                $caps_found++;
-                if ($caps_found === 2) {
-                    $split_index = $i;
-                    break;
+        // Find where to split the color
+        $split_at = -1;
+        $space_index = strpos($title, ' ');
+
+        if ($space_index !== false) {
+            $split_at = $space_index;
+        } else {
+            // Find second capital letter (CamelCase)
+            $caps_found = 0;
+            for ($i = 0; $i < strlen($title); $i++) {
+                if (ctype_upper($title[$i])) {
+                    $caps_found++;
+                    if ($caps_found === 2) {
+                        $split_at = $i;
+                        break;
+                    }
                 }
             }
+
+            // Fallback for names like BUYBEATS
+            if ($split_at === -1 && strpos(strtoupper($title), 'BUY') === 0 && strlen($title) > 3) {
+                $split_at = 3;
+            }
+        }
+
+        if ($split_at > 0 && $split_at < strlen($title)) {
+            $part1 = substr($title, 0, $split_at);
+            $part2 = substr($title, $split_at);
+            return '<span>' . self::escape($part1) . '<span style="color:var(--accent)">' . self::escape($part2) . '</span></span>';
         }
         
-        if ($split_index !== -1) {
-            $part1 = substr($title, 0, $split_index);
-            $part2 = substr($title, $split_index);
-            return self::escape($part1) . '<span style="color:#ffa326">' . self::escape($part2) . '</span>';
-        }
-        
-        return self::escape($title);
+        return '<span>' . self::escape($title) . '</span>';
     }
 
     public function render_seo($page_seo = []) {
-        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $this->setting('site_title', 'BUYAFROBEATS'));
+        $site_title = $this->setting('site_title', 'BUYAFROBEATS');
+        $site_title = str_replace(' ', '', $site_title);
+        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $site_title);
         $desc = !empty($page_seo['description']) ? $page_seo['description'] : $this->setting('global_meta_description', 'Exclusive beat auctions.');
         $keywords = !empty($page_seo['keywords']) ? $page_seo['keywords'] : $this->setting('global_meta_keywords', 'beats, auction, afrobeats');
 

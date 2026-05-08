@@ -4,7 +4,7 @@ use BAF\Core;
 
 $core = Core::get_instance();
 if (!$core->is_admin()) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
@@ -41,15 +41,15 @@ $faqs = $core->db()->query("SELECT * FROM faqs ORDER BY sort_order ASC, created_
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
-            <a href="index.php" class="tab">Dashboard</a>
-            <a href="pages.php" class="tab">Pages</a>
-            <a href="faqs.php" class="tab is-active">FAQs</a>
-            <a href="settings.php" class="tab">Settings</a>
+            <a href="index" class="tab">Dashboard</a>
+            <a href="pages" class="tab">Pages</a>
+            <a href="faqs" class="tab is-active">FAQs</a>
+            <a href="settings" class="tab">Settings</a>
         </div>
         <div class="spacer"></div>
-        <a href="logout.php" class="tab" style="font-size: 11px;">Logout</a>
+        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
     </div>
 </div>
 

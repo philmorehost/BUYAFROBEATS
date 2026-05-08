@@ -7,7 +7,7 @@ use BAF\Storage;
 
 $core = Core::get_instance();
 if (!$core->is_admin()) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
@@ -34,9 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $storage = new Storage();
         $filename = $storage->upload_audio($_FILES['audio']);
 
-        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_path, status) 
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'live')");
-        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename]);
+        $sample_filename = null;
+        if (isset($_FILES['sample']) && $_FILES['sample']['error'] === UPLOAD_ERR_OK) {
+            $sample_filename = $storage->upload_audio($_FILES['sample']);
+        }
+
+        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_path, sample_path, status)
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')");
+        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename, $sample_filename]);
 
         $success = "Beat \"$title\" has been listed live!";
     } catch (\Exception $e) {
@@ -58,14 +63,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
-            <a href="index.php" class="tab">Dashboard</a>
-            <a href="upload.php" class="tab is-active">+ Upload Beat</a>
-            <a href="settings.php" class="tab">Settings</a>
+            <a href="index" class="tab">Dashboard</a>
+            <a href="upload" class="tab is-active">+ Upload Beat</a>
+            <a href="settings" class="tab">Settings</a>
         </div>
         <div class="spacer"></div>
-        <a href="logout.php" class="tab" style="font-size: 11px;">Logout</a>
+        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
     </div>
 </div>
 
@@ -80,9 +85,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo Core::csrf_token(); ?>">
-            <div class="field">
-                <label>Audio File (.wav, .mp3, .aif)</label>
-                <input type="file" name="audio" accept="audio/*" required>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="field">
+                    <label>Main Audio File (HQ)</label>
+                    <input type="file" name="audio" accept="audio/*" required>
+                </div>
+                <div class="field">
+                    <label>Sample Audio (optional)</label>
+                    <input type="file" name="sample" accept="audio/*">
+                </div>
             </div>
             
             <div class="field">
@@ -112,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="actions" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
-                <a href="index.php" class="btn btn-ghost">Cancel</a>
+                <a href="index" class="btn btn-ghost">Cancel</a>
                 <button type="submit" class="btn btn-primary">Put it live →</button>
             </div>
         </form>

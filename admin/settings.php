@@ -4,7 +4,7 @@ use BAF\Core;
 
 $core = Core::get_instance();
 if (!$core->is_admin()) {
-    header('Location: login.php');
+    header('Location: login');
     exit;
 }
 
@@ -55,15 +55,15 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
 
 <div class="topbar">
     <div class="topbar-inner">
-        <a href="index.php" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
         <div class="tabs">
-            <a href="index.php" class="tab">Dashboard</a>
-            <a href="pages.php" class="tab">Pages</a>
-            <a href="upload.php" class="tab">+ Upload Beat</a>
-            <a href="settings.php" class="tab is-active">Settings</a>
+            <a href="index" class="tab">Dashboard</a>
+            <a href="pages" class="tab">Pages</a>
+            <a href="upload" class="tab">+ Upload Beat</a>
+            <a href="settings" class="tab is-active">Settings</a>
         </div>
         <div class="spacer"></div>
-        <a href="logout.php" class="tab" style="font-size: 11px;">Logout</a>
+        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
     </div>
 </div>
 
@@ -81,6 +81,8 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
             <a href="#social">Social</a>
             <a href="#ads">Ads & Analytics</a>
             <a href="#integration">Integrations</a>
+            <a href="#auth">Authentication</a>
+            <a href="#payment">Payments</a>
         </div>
 
         <form method="POST">
@@ -170,6 +172,60 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
             </div>
 
             <!-- Integration Tab -->
+                <!-- Payments Tab -->
+                <div id="payment" class="tab-content">
+                    <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Plisio Integration</h3>
+                    <div class="field">
+                        <label>Plisio API Key</label>
+                        <input type="password" name="plisio_api_key" value="<?php echo Core::escape($core->setting('plisio_api_key')); ?>" placeholder="Your Plisio Secret API Key">
+                        <p style="font-size: 11px; color: var(--ink-mute); margin: 4px 0 0;">Get your key from the <a href="https://plisio.net/dashboard/settings/api" target="_blank" style="color:var(--accent)">Plisio Dashboard</a>.</p>
+                    </div>
+
+                    <?php
+                        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+                        $base_path = rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/\\');
+                        $webhook_url = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/webhook_plisio';
+                    ?>
+                    <div class="field" style="margin-top: 24px;">
+                        <label>Status URL (Webhook)</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="webhook_url" value="<?php echo Core::escape($webhook_url); ?>" readonly style="background: var(--bg-3);">
+                            <button type="button" class="btn" onclick="copyWebhook()">Copy</button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--ink-mute); margin: 4px 0 0;">Enter this URL in your Plisio Shop settings as "Status URL".</p>
+                    </div>
+                </div>
+
+                <script>
+                function copyWebhook() {
+                    const el = document.getElementById('webhook_url');
+                    el.select();
+                    document.execCommand('copy');
+                    alert('Webhook URL copied to clipboard!');
+                }
+                </script>
+
+            <div id="auth" class="tab-content">
+                <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Google OAuth2</h3>
+                <div class="field">
+                    <label>Google Client ID</label>
+                    <input type="text" name="google_client_id" value="<?php echo Core::escape($core->setting('google_client_id')); ?>" placeholder="your-client-id.apps.googleusercontent.com">
+                </div>
+                <div class="field">
+                    <label>Google Client Secret</label>
+                    <input type="password" name="google_client_secret" value="<?php echo Core::escape($core->setting('google_client_secret')); ?>" placeholder="your-client-secret">
+                </div>
+                <?php
+                    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+                    $base_path = rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/\\');
+                    $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/google_callback';
+                ?>
+                <p style="font-size: 11px; color: var(--ink-mute); margin: 8px 0 0;">
+                    <b>Redirect URI:</b> <code><?php echo Core::escape($redirect_uri); ?></code><br>
+                    Add this to your <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud Console</a>.
+                </p>
+            </div>
+
             <div id="integration" class="tab-content">
                 <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Custom Code Injection</h3>
                 <div class="field">
