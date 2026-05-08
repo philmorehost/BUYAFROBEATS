@@ -1,5 +1,5 @@
 <?php
-if (!file_exists(__DIR__ . '/config')) {
+if (!file_exists(__DIR__ . '/config.php')) {
     header('Location: ./install/');
     exit;
 }
@@ -203,4 +203,4 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<?php include __DIR__ . "/includes/footer.php"; ?>

@@ -32,13 +32,20 @@
                     <a href="privacy">Privacy Policy</a>
                     <a href="terms">Terms & Conditions</a>
                     <?php 
-                    require_once __DIR__ . '/CMS.php';
-                    $cms_footer = new \BAF\CMS($core);
-                    foreach ($cms_footer->get_all_pages() as $fp): 
-                        $href = $fp['is_external'] ? $fp['external_url'] : "page?slug=".$fp['slug'];
+                    try {
+                        require_once __DIR__ . '/CMS.php';
+                        $cms_footer = new \BAF\CMS($core);
+                        $footer_pages = $cms_footer->get_all_pages();
+                        foreach ($footer_pages as $fp):
+                            $href = $fp['is_external'] ? $fp['external_url'] : "page?slug=".$fp['slug'];
                     ?>
                         <a href="<?php echo Core::escape($href); ?>"><?php echo Core::escape($fp['title']); ?></a>
-                    <?php endforeach; ?>
+                    <?php
+                        endforeach;
+                    } catch (\Exception $e) {
+                        // DB might not be ready during install, skip dynamic pages
+                    }
+                    ?>
                 </div>
             </div>
 

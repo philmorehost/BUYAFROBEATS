@@ -7,7 +7,7 @@ class Core {
     private $settings = [];
 
     private function __construct() {
-        $config_file = __DIR__ . '/../config';
+        $config_file = __DIR__ . '/../config.php';
         if (!file_exists($config_file)) {
             if (strpos($_SERVER['REQUEST_URI'], '/install/') === false) {
                 header('Location: ./install/');

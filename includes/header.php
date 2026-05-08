@@ -41,9 +41,11 @@ $title = $site_title . " — exclusive beat auctions";
         </div>
     </div>
 </div>
+
 <div class="share-sidebar">
     <?php 
-    $current_url = urlencode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]");
+    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+    $current_url = urlencode($protocol . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]");
     $share_title = urlencode($site_title . " — Exclusive Beat Auctions");
     ?>
     <a href="https://twitter.com/intent/tweet?text=<?php echo $share_title; ?>&url=<?php echo $current_url; ?>" target="_blank" title="Share on Twitter" class="share-btn twitter">

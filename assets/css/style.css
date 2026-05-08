@@ -1,16 +1,16 @@
 :root {
-  --bg: oklch(0.16 0.012 65);
-  --bg-2: oklch(0.20 0.013 65);
-  --bg-3: oklch(0.24 0.014 65);
-  --line: oklch(0.30 0.012 65);
-  --ink: oklch(0.96 0.012 85);
-  --ink-dim: oklch(0.72 0.014 75);
-  --ink-mute: oklch(0.55 0.012 70);
-  --accent: oklch(0.80 0.17 65);
-  --accent-ink: oklch(0.18 0.02 60);
-  --danger: oklch(0.70 0.18 28);
-  --ok: oklch(0.80 0.16 150);
-  --hot: oklch(0.72 0.20 32);
+  --bg: #1a1815; /* oklch(0.16 0.012 65) fallback */
+  --bg-2: #211f1c; /* oklch(0.20 0.013 65) fallback */
+  --bg-3: #2a2824; /* oklch(0.24 0.014 65) fallback */
+  --line: #3a3832; /* oklch(0.30 0.012 65) fallback */
+  --ink: #fcfcfc; /* oklch(0.96 0.012 85) fallback */
+  --ink-dim: #b8b6b0; /* oklch(0.72 0.014 75) fallback */
+  --ink-mute: #8a8882; /* oklch(0.55 0.012 70) fallback */
+  --accent: #ffa326; /* oklch(0.80 0.17 65) fallback */
+  --accent-ink: #1a1815; /* oklch(0.18 0.02 60) fallback */
+  --danger: #ff4d4d; /* oklch(0.70 0.18 28) fallback */
+  --ok: #2ecc71; /* oklch(0.80 0.16 150) fallback */
+  --hot: #ff6b35; /* oklch(0.72 0.20 32) fallback */
 }
 
 * { box-sizing: border-box; }
@@ -228,7 +228,7 @@ body { min-height: 100vh; }
 ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 10px; }
 
 /* Share Sidebar */
-.share-sidebar { position: fixed; right: 0; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 1000; padding: 12px; background: color-mix(in oklab, var(--bg) 80%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); border-right: 0; border-radius: 16px 0 0 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+.share-sidebar { position: fixed; right: 0; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 1000; padding: 12px; background: #1a1815cc; background: color-mix(in oklab, var(--bg) 80%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line); border-right: 0; border-radius: 16px 0 0 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); visibility: visible !important; opacity: 1 !important; }
 .share-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; color: var(--ink-dim); text-decoration: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .share-btn:hover { color: #fff; transform: translateX(-4px); }
 .share-btn.twitter:hover { background: #1DA1F2; }
