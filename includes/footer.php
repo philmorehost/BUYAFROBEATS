@@ -26,9 +26,9 @@
             <div class="footer-col">
                 <div class="footer-nav">
                     <h4>Marketplace</h4>
-                    <a href="index">Browse All</a>
-                    <a href="index?genre=Afrobeats">Afrobeats</a>
-                    <a href="index?genre=Amapiano">Amapiano</a>
+                    <a href="/index">Browse All</a>
+                    <a href="/index?genre=Afrobeats">Afrobeats</a>
+                    <a href="/index?genre=Amapiano">Amapiano</a>
                 </div>
             </div>
 
@@ -51,7 +51,7 @@
                         <?php
                             endforeach;
                         }
-                    } catch (\Exception $e) {}
+                    } catch (\Throwable $e) {}
                     ?>
                 </div>
             </div>

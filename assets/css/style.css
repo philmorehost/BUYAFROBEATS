@@ -269,16 +269,16 @@ body { min-height: 100vh; }
 .content blockquote { border-left: 3px solid var(--accent); padding-left: 20px; margin: 32px 0; color: var(--ink); font-style: italic; }
 
 /* Footer */
-.footer { background: var(--bg-2); border-top: 1px solid var(--line); margin-top: 80px; padding: 80px 0 40px; display: block !important; }
+.footer { background: var(--bg-2); border-top: 1px solid var(--line); margin-top: 80px; padding: 80px 0 40px; display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 10 !important; }
 .footer-inner { max-width: 1400px; margin: 0 auto; padding: 0 40px; }
-.footer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; margin-bottom: 60px; display: grid !important; }
-.footer-col { min-width: 0; }
+.footer-grid { display: flex !important; flex-wrap: wrap !important; gap: 40px; margin-bottom: 60px; justify-content: space-between !important; }
+.footer-col { min-width: 200px; flex: 1; display: block !important; visibility: visible !important; opacity: 1 !important; }
 .footer-col.brand { flex: 1.5; min-width: 280px; }
 .footer-col.newsletter { flex: 1.5; min-width: 300px; }
 .footer-brand .logo { margin-bottom: 24px; font-size: 20px; }
 .footer-brand p { color: var(--ink-mute); font-size: 15px; max-width: 32ch; line-height: 1.7; margin-bottom: 28px; }
-.footer h4 { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin: 0 0 24px; font-weight: 600; }
-.footer-nav a { display: block; color: var(--ink-dim); text-decoration: none; font-size: 15px; margin-bottom: 14px; transition: all 0.2s; }
+.footer h4 { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent) !important; margin: 0 0 24px; font-weight: 600; display: block !important; }
+.footer-nav a { display: block; color: var(--ink-dim); text-decoration: none; font-size: 15px; margin-bottom: 12px; transition: all 0.2s; }
 .footer-nav a:hover { color: var(--accent); padding-left: 4px; }
 .footer-newsletter p { color: var(--ink-mute); font-size: 15px; margin-bottom: 20px; line-height: 1.6; }
 .newsletter-field { display: flex; gap: 10px; background: var(--bg); border: 1px solid var(--line); padding: 6px; border-radius: 12px; }
@@ -293,7 +293,7 @@ body { min-height: 100vh; }
 
 @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } .leaderboard { position: static; max-height: none; order: -1; } }
 @media (max-width: 800px) {
-  .footer-grid { flex-direction: column; gap: 40px; }
+  .footer-grid { grid-template-columns: 1fr; gap: 40px; }
   .footer-col { width: 100%; flex: none; }
   .footer-bottom { flex-direction: column; gap: 20px; text-align: center; }
   .footer-legal { justify-content: center; }
