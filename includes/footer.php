@@ -35,9 +35,9 @@
             <div class="footer-col">
                 <div class="footer-nav">
                     <h4>Company</h4>
-                    <a href="faqs">FAQs</a>
-                    <a href="privacy">Privacy Policy</a>
-                    <a href="terms">Terms & Conditions</a>
+                    <a href="/faqs">FAQs</a>
+                    <a href="/privacy">Privacy Policy</a>
+                    <a href="/terms">Terms & Conditions</a>
                     <?php 
                     try {
                         if ($core->db()) {
@@ -72,7 +72,7 @@
         <div class="footer-bottom">
             <span>&copy; <?php echo date('Y'); ?> <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
             <div class="footer-legal">
-                <a href="privacy">Privacy</a> · <a href="terms">Terms</a>
+                <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>
             </div>
         </div>
     </div>
