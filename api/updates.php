@@ -10,6 +10,12 @@ header('X-Accel-Buffering: no'); // Disable buffering for Nginx
 $core = Core::get_instance();
 $last_activity_id = $_GET['last_id'] ?? 0;
 
+// CRITICAL: Release the session lock so other pages can load
+// while this infinite loop is running.
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 // Poll for changes
 while (true) {
     if (connection_aborted()) break;
