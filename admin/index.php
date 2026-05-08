@@ -23,6 +23,19 @@ $avg_sale = $sold_count > 0 ? $total_rev / $sold_count : 0;
 
 $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN beats b ON s.beat_id = b.id ORDER BY sold_at DESC")->fetchAll();
 
+// CSV Export Logic
+if (isset($_GET['export']) && $is_admin) {
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="BUYAFROBEATS_Sales_' . date('Y-m-d') . '.csv"');
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['Delivery ID', 'Beat Title', 'Winner Handle', 'Winner Email', 'Price', 'Status', 'Sold At']);
+    foreach ($sales as $s) {
+        fputcsv($output, [$s['delivery_id'], $s['beat_title'], $s['winner_handle'], $s['winner_email'], $s['price'], $s['payment_status'], $s['sold_at']]);
+    }
+    fclose($output);
+    exit;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -114,7 +127,12 @@ $sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN
 
     <?php endif; // End Admin Check ?>
 
-    <h3 style="font-size:14px; margin:0 0 12px; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)"><?php echo $is_admin ? 'Sales Log' : 'My Purchases'; ?></h3>
+    <div style="display:flex; align-items: center; justify-content:space-between; margin:0 0 12px;">
+        <h3 style="font-size:14px; margin:0; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)"><?php echo $is_admin ? 'Sales Log' : 'My Purchases'; ?></h3>
+        <?php if ($is_admin && !empty($sales)): ?>
+            <a href="?export=1" class="btn" style="font-size: 10px; padding: 5px 12px; border: 1px solid var(--line); background: transparent;">Export CSV ↓</a>
+        <?php endif; ?>
+    </div>
     <?php
     // If not admin, only show user's own sales
     if (!$is_admin) {

@@ -31,9 +31,13 @@ class Auction {
     }
 
     public function get_leaderboard($limit = 6) {
-        // Logic similar to React: Score based on bids, current price, and urgency
+        // PRD Score: (Bids * 10) + (Price * 0.1) + (Urgency Boost if < 5m)
         $stmt = $this->core->db()->query("SELECT *, 
-            ( (SELECT COUNT(*) FROM bids WHERE beat_id = b.id) * 10 + current_bid * 0.1 ) as score 
+            ( 
+                (SELECT COUNT(*) FROM bids WHERE beat_id = b.id) * 10 + 
+                current_bid * 0.1 + 
+                IF(ends_at IS NOT NULL AND TIMESTAMPDIFF(MINUTE, NOW(), ends_at) < 5, 50, 0)
+            ) as score 
             FROM beats b WHERE status = 'live' ORDER BY score DESC LIMIT $limit");
         return $stmt->fetchAll();
     }

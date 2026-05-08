@@ -39,9 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sample_filename = $storage->upload_audio($_FILES['sample']);
         }
 
-        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_path, sample_path, status)
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')");
-        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename, $sample_filename]);
+        $stems_filename = null;
+        if (isset($_FILES['stems']) && $_FILES['stems']['error'] === UPLOAD_ERR_OK) {
+            // Re-using upload_audio for stems (Storage handles extension validation)
+            $stems_filename = $storage->upload_audio($_FILES['stems']);
+        }
+
+        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_path, sample_path, stems_path, status)
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')");
+        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename, $sample_filename, $stems_filename]);
 
         $success = "Beat \"$title\" has been listed live!";
     } catch (\Exception $e) {
@@ -86,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo Core::csrf_token(); ?>">
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
                 <div class="field">
                     <label>Main Audio File (HQ)</label>
                     <input type="file" name="audio" accept="audio/*" required>
@@ -94,6 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="field">
                     <label>Sample Audio (optional)</label>
                     <input type="file" name="sample" accept="audio/*">
+                </div>
+                <div class="field">
+                    <label>Stems (ZIP, optional)</label>
+                    <input type="file" name="stems" accept=".zip">
                 </div>
             </div>
             
@@ -130,6 +140,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </div>
+
+<script>
+    // Audio Duration Auto-detection (F1.3)
+    document.querySelector('input[name="audio"]').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const audio = new Audio();
+            audio.src = URL.createObjectURL(file);
+            audio.addEventListener('loadedmetadata', function() {
+                const duration = Math.floor(audio.duration);
+                const mins = Math.floor(duration / 60);
+                const secs = duration % 60;
+                const formatted = `${mins}:${secs.toString().padStart(2, '0')}`;
+                document.querySelector('input[name="duration"]').value = formatted;
+                URL.revokeObjectURL(audio.src);
+            });
+        }
+    });
+</script>
 
 </body>
 </html>

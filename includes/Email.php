@@ -8,33 +8,40 @@ class Email {
         $this->core = $core;
     }
 
-    public function send($to, $subject, $message) {
+    public function send($to, $subject, $message, $attachments = []) {
         $from = $this->core->setting('smtp_from', 'no-reply@buyafrobeats.com');
+        $site_title = $this->core->setting('site_title', 'BUYAFROBEATS');
 
-        if (empty($this->core->setting('smtp_host'))) {
-            // Fallback to mail() if no SMTP configured
-            $headers = "From: $from\r\n";
-            $headers .= "MIME-Version: 1.0\r\n";
-            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            return mail($to, $subject, $message, $headers);
+        $boundary = md5(time());
+        $headers = "From: $site_title <$from>\r\n";
+        $headers .= "Reply-To: $from\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: multipart/mixed; boundary=\"$boundary\"\r\n";
+        $headers .= "X-Mailer: $site_title-PHP\r\n";
+
+        // Body
+        $body = "--$boundary\r\n";
+        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
+        $body .= $message . "\r\n";
+
+        // Attachments
+        foreach ($attachments as $filename => $path) {
+            if (file_exists($path)) {
+                $content = file_get_contents($path);
+                $content = chunk_split(base64_encode($content));
+                $body .= "--$boundary\r\n";
+                $body .= "Content-Type: application/octet-stream; name=\"$filename\"\r\n";
+                $body .= "Content-Description: $filename\r\n";
+                $body .= "Content-Disposition: attachment; filename=\"$filename\"; size=" . filesize($path) . ";\r\n";
+                $body .= "Content-Transfer-Encoding: base64\r\n\r\n";
+                $body .= $content . "\r\n";
+            }
         }
+        $body .= "--$boundary--";
 
-        // Simple SMTP Implementation (using PHP's stream_socket_client)
-        // Note: For a production app, PHPMailer is recommended. 
-        // Here we implement a basic version for "Vanilla PHP" compliance.
-        
         try {
-            // Since implementing a full SMTP stack with TLS is complex in one file,
-            // we will use the built-in mail() but log that SMTP settings are detected.
-            // In a real scenario, this would connect to $host via fsockopen.
-            
-            $headers = "From: $from\r\n";
-            $headers .= "Reply-To: $from\r\n";
-            $headers .= "MIME-Version: 1.0\r\n";
-            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "X-Mailer: " . $this->core->setting('site_title', 'BUYAFROBEATS') . "-PHP\r\n";
-            
-            return mail($to, $subject, $message, $headers);
+            return mail($to, $subject, $body, $headers);
         } catch (\Exception $e) {
             return false;
         }
@@ -60,11 +67,13 @@ class Email {
     public function send_payment_receipt($sale) {
         $subject = "Payment Receipt & Download: " . $sale['title'];
         $download_url = $this->get_site_url() . "/api/download.php?token=" . $sale['download_token'];
+        
+        $license_path = $this->generate_license($sale);
 
         $msg = "
         <div style='background:#f9f9f9; padding:30px; border-radius:16px; border:1px solid #eee;'>
             <h2 style='margin-top:0;'>Payment Received</h2>
-            <p>Thank you for your purchase. Your payment for <b>" . Core::escape($sale['title']) . "</b> has been confirmed.</p>
+            <p>Thank you for your purchase. Your exclusive license for <b>" . Core::escape($sale['title']) . "</b> is attached.</p>
 
             <div style='background:#fff; padding:20px; border-radius:12px; margin:24px 0; border:1px solid #eee;'>
                 <table style='width:100%; border-collapse:collapse;'>
@@ -75,13 +84,47 @@ class Email {
                 </table>
             </div>
 
-            <p>Your exclusive license and audio file are now available:</p>
-            <a href='$download_url' style='display:inline-block; background:#000; color:#fff; padding:14px 28px; text-decoration:none; border-radius:999px; font-weight:bold;'>Download Beat (.WAV)</a>
+            <p>Your exclusive master file is now available for download:</p>
+            <a href='$download_url' style='display:inline-block; background:#000; color:#fff; padding:14px 28px; text-decoration:none; border-radius:999px; font-weight:bold;'>Download Master (.WAV)</a>
+
+            " . (!empty($sale['stems_path']) ? "<p style='margin-top:10px;'>Track Stems are also included in your download package.</p>" : "") . "
 
             <p style='margin-top:30px; color:#d93025; font-size:13px; font-weight:bold;'>CRITICAL: You must download this file within 24 hours. To ensure exclusivity, the file will be permanently deleted from our server after this window.</p>
         </div>";
 
-        return $this->send($sale['winner_email'], $subject, $this->wrap_template($msg));
+        return $this->send($sale['winner_email'], $subject, $this->wrap_template($msg), [
+            "Exclusive_License_" . $sale['delivery_id'] . ".txt" => $license_path
+        ]);
+    }
+
+    private function generate_license($sale) {
+        $site_title = $this->core->setting('site_title', 'BUYAFROBEATS');
+        $date = date('F j, Y');
+        
+        $text = "====================================================\n";
+        $text .= "         EXCLUSIVE AUDIO LICENSE AGREEMENT          \n";
+        $text .= "====================================================\n\n";
+        $text .= "DATE: $date\n";
+        $text .= "LICENSEE: " . $sale['winner_handle'] . " (" . $sale['winner_email'] . ")\n";
+        $text .= "LICENSOR: $site_title Studio\n";
+        $text .= "ITEM: " . $sale['title'] . "\n";
+        $text .= "DELIVERY ID: " . $sale['delivery_id'] . "\n";
+        $text .= "PRICE PAID: $" . number_format($sale['price'], 2) . "\n\n";
+        $text .= "TERMS OF EXCLUSIVITY:\n";
+        $text .= "1. The Licensor hereby grants the Licensee a 100% exclusive, perpetual, \n";
+        $text .= "   worldwide license to use the Item in any commercial or non-commercial \n";
+        $text .= "   project. No other parties hold a license for this Item.\n";
+        $text .= "2. The Licensor warrants that the Item has been removed from public sale \n";
+        $text .= "   and all master files have been deleted from the server within 24 hours \n";
+        $text .= "   of this transaction to protect Licensee's exclusivity.\n";
+        $text .= "3. This document serves as the official Proof of Ownership.\n\n";
+        $text .= "Signed,\n";
+        $text .= "$site_title Studio Automation Sentinel\n";
+        $text .= "Hash: " . md5($sale['delivery_id'] . AUTH_SALT) . "\n";
+
+        $tmp_path = __DIR__ . '/../uploads/temp_license_' . $sale['delivery_id'] . '.txt';
+        file_put_contents($tmp_path, $text);
+        return $tmp_path;
     }
 
     private function get_site_url() {

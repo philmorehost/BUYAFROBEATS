@@ -159,9 +159,9 @@ class Core {
     public function render_seo($page_seo = []) {
         $site_title = $this->setting('site_title', 'BUYAFROBEATS');
         $site_title = str_replace(' ', '', $site_title);
-        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $site_title);
-        $desc = !empty($page_seo['description']) ? $page_seo['description'] : $this->setting('global_meta_description', 'Exclusive beat auctions.');
-        $keywords = !empty($page_seo['keywords']) ? $page_seo['keywords'] : $this->setting('global_meta_keywords', 'beats, auction, afrobeats');
+        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $site_title . " — Exclusive Beat Auctions");
+        $desc = !empty($page_seo['description']) ? $page_seo['description'] : $this->setting('global_meta_description', 'A one-of-one Afrobeats auction house. Upload, bid, win, and the beat vanishes.');
+        $keywords = !empty($page_seo['keywords']) ? $page_seo['keywords'] : $this->setting('global_meta_keywords', 'beats, auction, afrobeats, exclusive');
 
         $html = "<title>" . self::escape($title) . "</title>\n";
         $html .= "    <meta name=\"description\" content=\"" . self::escape($desc) . "\">\n";
@@ -171,6 +171,14 @@ class Core {
         $html .= "    <meta property=\"og:title\" content=\"" . self::escape($title) . "\">\n";
         $html .= "    <meta property=\"og:description\" content=\"" . self::escape($desc) . "\">\n";
         $html .= "    <meta property=\"og:type\" content=\"website\">\n";
+        $html .= "    <meta property=\"og:url\" content=\"" . (isset($_SERVER['HTTPS']) ? 'https' : 'http') . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]\">\n";
+        $html .= "    <meta property=\"og:image\" content=\"" . $this->get_site_url() . "/assets/img/share-card.png\">\n";
+
+        // Twitter
+        $html .= "    <meta name=\"twitter:card\" content=\"summary_large_image\">\n";
+        $html .= "    <meta name=\"twitter:title\" content=\"" . self::escape($title) . "\">\n";
+        $html .= "    <meta name=\"twitter:description\" content=\"" . self::escape($desc) . "\">\n";
+        $html .= "    <meta name=\"twitter:image\" content=\"" . $this->get_site_url() . "/assets/img/share-card.png\">\n";
         
         // AdSense
         $adsense_id = $this->setting('google_adsense_client');
@@ -179,6 +187,12 @@ class Core {
         }
 
         return $html;
+    }
+
+    public function get_site_url() {
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+        $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+        return $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path;
     }
 
     public function render_head_injection() {

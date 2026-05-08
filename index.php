@@ -147,25 +147,27 @@ include __DIR__ . '/includes/header.php';
                     <h3><span class="live-dot"></span> Leaderboard</h3>
                     <span class="hint">TOP 6 · LIVE</span>
                 </div>
-                <?php foreach ($leaderboard as $i => $lb): ?>
-                    <div class="lb-item">
-                        <div class="lb-rank"><?php echo str_pad($i+1, 2, '0', STR_PAD_LEFT); ?></div>
-                        <div class="lb-cover" style="background: oklch(0.3 0.08 <?php echo (crc32($lb['title']) % 360); ?>)"></div>
-                        <div class="lb-info">
-                            <div class="lb-title"><?php echo Core::escape($lb['title']); ?></div>
-                            <div class="lb-sub"><span><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$lb['id']}")->fetchColumn(); ?> bids</span></div>
+                <div id="leaderboard-items">
+                    <?php foreach ($leaderboard as $i => $lb): ?>
+                        <div class="lb-item" data-beat-id="<?php echo $lb['id']; ?>">
+                            <div class="lb-rank"><?php echo str_pad($i+1, 2, '0', STR_PAD_LEFT); ?></div>
+                            <div class="lb-cover" style="background: oklch(0.3 0.08 <?php echo (crc32($lb['title']) % 360); ?>)"></div>
+                            <div class="lb-info">
+                                <div class="lb-title"><?php echo Core::escape($lb['title']); ?></div>
+                                <div class="lb-sub"><span class="bid-count"><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$lb['id']}")->fetchColumn(); ?> bids</span></div>
+                            </div>
+                            <div class="lb-bid">
+                                <div class="amt">$<?php echo number_format($lb['current_bid'], 0); ?></div>
+                            </div>
                         </div>
-                        <div class="lb-bid">
-                            <div class="amt">$<?php echo number_format($lb['current_bid'], 2); ?></div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+                    <?php endforeach; ?>
+                </div>
 
                 <div class="lb-activity">
                     <h4>Live activity</h4>
                     <div id="activity-list">
                         <?php foreach ($activity as $act): ?>
-                            <div class="activity-item">
+                            <div class="activity-item fade-in">
                                 <span class="dot"></span>
                                 <span><b><?php echo Core::escape($act['user_handle']); ?></b> <?php echo Core::escape($act['message']); ?></span>
                             </div>
@@ -197,6 +199,10 @@ include __DIR__ . '/includes/header.php';
                 <div class="field"><label>Your handle</label><input type="text" name="handle" placeholder="@yourname" required></div>
                 <div class="field"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required></div>
             </div>
+            <div class="field">
+                <label id="captcha-label">Security: 0 + 0 = ?</label>
+                <input type="number" name="captcha_ans" placeholder="Enter answer" required>
+            </div>
             <div class="actions" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
                 <button type="button" class="btn btn-ghost" id="close-modal">Cancel</button>
                 <button type="submit" class="btn btn-primary">Place Bid →</button>
@@ -206,3 +212,144 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <?php include __DIR__ . "/includes/footer.php"; ?>
+
+<script>
+    // SSE Real-time Pulse
+    let lastActivityId = 0;
+    const evtSource = new EventSource(`api/updates.php?last_id=${lastActivityId}`);
+
+    evtSource.addEventListener('activity', (e) => {
+        const data = JSON.parse(e.data);
+        lastActivityId = data.id;
+        
+        // Update Activity Feed
+        const feed = document.getElementById('activity-list');
+        const item = document.createElement('div');
+        item.className = 'activity-item fade-in';
+        item.innerHTML = `<span class="dot"></span><span><strong>@${data.user_handle}</strong> ${data.message}</span>`;
+        feed.prepend(item);
+        if (feed.children.length > 5) feed.lastChild.remove();
+
+        // Update Beat Card & Leaderboard
+        updateBeatUI(data.beat_id, data.current_bid, data.ends_at);
+        
+        // Toast for outbid
+        if (data.type === 'bid') {
+            showToast(`New bid on ${data.title}: $${data.current_bid}`);
+        }
+    });
+
+    function updateBeatUI(id, price, endsAt) {
+        const bidElements = document.querySelectorAll(`[data-beat-id="${id}"] .amt, [data-beat-id="${id}"] .current-bid-amount`);
+        bidElements.forEach(el => {
+            el.innerText = `$${Number(price).toLocaleString()}`;
+            el.classList.add('pulse-highlight');
+            setTimeout(() => el.classList.remove('pulse-highlight'), 1000);
+        });
+        
+        const timers = document.querySelectorAll(`[data-beat-id="${id}"] [data-ends]`);
+        timers.forEach(t => t.setAttribute('data-ends', endsAt));
+    }
+
+    function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Modal Logic
+    const modal = document.getElementById('bid-modal');
+    const bidForm = document.getElementById('bid-form');
+
+    function refreshCaptcha() {
+        const a = Math.floor(Math.random() * 10) + 1;
+        const b = Math.floor(Math.random() * 10) + 1;
+        document.getElementById('captcha-label').innerText = `Security: ${a} + ${b} = ?`;
+        bidForm.dataset.ans = a + b;
+    }
+
+    document.addEventListener('click', (e) => {
+        // Find if we clicked an open-bid button OR a leaderboard item
+        const lbItem = e.target.closest('.lb-item');
+        const openBidBtn = e.target.classList.contains('open-bid') ? e.target : e.target.closest('.open-bid');
+        
+        const trigger = openBidBtn || lbItem;
+
+        if (trigger && (trigger.classList.contains('open-bid') || trigger.classList.contains('lb-item'))) {
+            // If it's a leaderboard item, we need to find the corresponding beat data
+            // For now, we'll trigger the bid modal using the data attributes
+            const btnData = trigger.classList.contains('open-bid') ? trigger.dataset : 
+                           document.querySelector(`.open-bid[data-id="${trigger.dataset.beatId}"]`)?.dataset;
+
+            if (btnData) {
+                document.getElementById('modal-beat-id').value = btnData.id;
+                document.getElementById('modal-amount').value = btnData.min;
+                document.getElementById('modal-amount').min = btnData.min;
+                document.getElementById('modal-beat-info').innerHTML = `<strong>${btnData.title}</strong> <span class="spacer"></span> <span class="mono">Min: $${btnData.min}</span>`;
+                
+                refreshCaptcha();
+                modal.classList.add('show');
+            }
+        }
+        if (e.target === modal || e.target.id === 'close-modal') {
+            modal.classList.remove('show');
+        }
+    });
+
+    bidForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ans = bidForm.elements['captcha_ans'].value;
+        if (ans != bidForm.dataset.ans) {
+            alert("Security check failed. Please try again.");
+            refreshCaptcha();
+            return;
+        }
+
+        const formData = new FormData(bidForm);
+        const submitBtn = bidForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Placing...";
+
+        try {
+            const resp = await fetch('api/bid.php', { method: 'POST', body: formData });
+            const result = await resp.json();
+            if (result.success) {
+                showToast("Bid placed successfully!");
+                modal.classList.remove('show');
+                bidForm.reset();
+            } else {
+                alert(result.error || "Failed to place bid.");
+            }
+        } catch (err) {
+            alert("Connection error. Please try again.");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Place Bid →";
+        }
+    });
+
+    // Global countdown timer
+    setInterval(() => {
+        document.querySelectorAll('[data-ends]').forEach(el => {
+            const endsAt = new Date(el.getAttribute('data-ends')).getTime();
+            const now = new Date().getTime();
+            const diff = endsAt - now;
+
+            if (diff <= 0) {
+                el.innerText = "CLOSED";
+                el.style.color = "var(--ink-mute)";
+            } else {
+                const mins = Math.floor(diff / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                el.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+                if (mins < 2) el.style.color = "var(--danger)";
+            }
+        });
+    }, 1000);
+</script>
