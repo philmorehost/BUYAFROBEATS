@@ -1,5 +1,8 @@
-<?php
 use BAF\Core;
+
+if (!isset($core) || !($core instanceof Core)) {
+    $core = Core::get_instance();
+}
 /**
  * BULLETPROOF FOOTER
  * This footer is designed to be resilient against empty database settings,
@@ -15,10 +18,10 @@ use BAF\Core;
                 <p class="f-tagline">One-of-one beats. Exclusive rights. The clock is ticking.</p>
                 <div class="f-social">
                     <?php if($ig = $core->setting('social_instagram')): ?>
-                        <a href="<?php echo Core::escape($ig); ?>" target="_blank" aria-label="Instagram">IG</a>
+                        <a href="<?php echo \BAF\Core::escape($ig); ?>" target="_blank" aria-label="Instagram">IG</a>
                     <?php endif; ?>
                     <?php if($tw = $core->setting('social_twitter')): ?>
-                        <a href="<?php echo Core::escape($tw); ?>" target="_blank" aria-label="Twitter">TW</a>
+                        <a href="<?php echo \BAF\Core::escape($tw); ?>" target="_blank" aria-label="Twitter">TW</a>
                     <?php endif; ?>
                     <a href="#" aria-label="WhatsApp">WA</a>
                 </div>
@@ -53,7 +56,7 @@ use BAF\Core;
                                     $dynamic_p = $cms_f->get_all_pages();
                                     foreach ($dynamic_p as $p) {
                                         $url = $p['is_external'] ? $p['external_url'] : "page?slug=".$p['slug'];
-                                        echo '<li><a href="'.Core::escape($url).'">'.Core::escape($p['title']).'</a></li>';
+                                        echo '<li><a href="'.\BAF\Core::escape($url).'">'.\BAF\Core::escape($p['title']).'</a></li>';
                                     }
                                 }
                             }
@@ -78,7 +81,7 @@ use BAF\Core;
         </div>
         
         <div class="f-bottom">
-            <span>&copy; <?php echo date('Y'); ?> <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
+            <span>&copy; <?php echo date('Y'); ?> <?php echo \BAF\Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
             <div class="f-legal-links">
                 <a href="privacy.php">Privacy</a> · <a href="terms.php">Terms</a>
             </div>
