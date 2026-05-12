@@ -1,3 +1,4 @@
+<?php
 use BAF\Core;
 
 if (!isset($core) || !($core instanceof Core)) {
