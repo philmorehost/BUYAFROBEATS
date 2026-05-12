@@ -10,7 +10,9 @@ class Core {
         $config_file = __DIR__ . '/../config.php';
         if (!file_exists($config_file)) {
             if (strpos($_SERVER['REQUEST_URI'], '/install/') === false) {
-                header('Location: ./install/');
+                $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+                $base_url = $protocol . "://" . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+                header("Location: $base_url/install/");
                 exit;
             }
             return;
