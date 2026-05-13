@@ -19,6 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!Core::verify_csrf($_POST['csrf_token'] ?? '')) {
             throw new \Exception("Security check failed.");
         }
+
+        $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+        
+        // Extend execution time for large file uploads
+        set_time_limit(600); // 10 minutes
         
         $title = $_POST['title'] ?? '';
         $starting = $_POST['starting_bid'] ?? 0;
@@ -50,8 +55,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename, $sample_filename, $stems_filename]);
 
         $success = "Beat \"$title\" has been listed live!";
+
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => $success]);
+            exit;
+        }
     } catch (\Exception $e) {
         $error = $e->getMessage();
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => $error]);
+            exit;
+        }
     }
 }
 
@@ -135,14 +151,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="actions" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
                 <a href="index" class="btn btn-ghost">Cancel</a>
-                <button type="submit" class="btn btn-primary">Put it live →</button>
+                <button type="submit" id="submit-btn" class="btn btn-primary">Put it live →</button>
             </div>
+
+            <div id="progress-container" class="progress-wrap">
+                <div id="progress-bar" class="progress-fill"></div>
+            </div>
+            <div id="progress-status" class="progress-text" style="display:none;">Uploading: 0%</div>
         </form>
     </div>
 </div>
 
 <script>
-    // Audio Duration Auto-detection (F1.3)
+    const form = document.querySelector('form');
+    const submitBtn = document.getElementById('submit-btn');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressStatus = document.getElementById('progress-status');
+
+    // Audio Duration Auto-detection
     document.querySelector('input[name="audio"]').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -158,6 +185,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
     });
+
+    // AJAX Upload with Progress
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
+
+        // UI state
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Uploading...';
+        progressContainer.style.display = 'block';
+        progressStatus.style.display = 'block';
+        
+        xhr.open('POST', 'upload.php', true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percent + '%';
+                progressStatus.innerText = `Uploading: ${percent}% (${Math.round(e.loaded/1024/1024)}MB / ${Math.round(e.total/1024/1024)}MB)`;
+                
+                if (percent === 100) {
+                    progressStatus.innerText = 'Processing on server... please wait.';
+                }
+            }
+        });
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        progressStatus.innerText = 'Success! Redirecting...';
+                        progressStatus.style.color = 'var(--ok)';
+                        progressBar.style.background = 'var(--ok)';
+                        setTimeout(() => {
+                            window.location.href = 'index?success=' + encodeURIComponent(response.message);
+                        }, 1000);
+                    } else {
+                        throw new Error(response.message || 'Upload failed');
+                    }
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                    resetUI();
+                }
+            } else {
+                alert('Server error: ' + xhr.status);
+                resetUI();
+            }
+        };
+
+        xhr.onerror = function() {
+            alert('Network error occurred.');
+            resetUI();
+        };
+
+        xhr.send(formData);
+    });
+
+    function resetUI() {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Put it live →';
+        progressContainer.style.display = 'none';
+        progressStatus.style.display = 'none';
+        progressBar.style.width = '0%';
+    }
 </script>
 
 </body>

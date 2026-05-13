@@ -13,3 +13,8 @@ RewriteRule ^(.+)\.php$ /$1 [R=301,L]
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
 RewriteRule ^(.*)$ $1.php [L]
+# Increase upload limits
+php_value upload_max_filesize 100M
+php_value post_max_size 100M
+php_value max_execution_time 600
+php_value max_input_time 600

@@ -44,9 +44,7 @@ $queries = [
         `answer` TEXT NOT NULL,
         `sort_order` INT DEFAULT 0,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
-
-    "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `stems_path` VARCHAR(255) AFTER `sample_path`;"
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 ];
 
 echo "<h2>Database Update Tool</h2>";
@@ -57,8 +55,21 @@ foreach ($queries as $sql) {
         $db->exec($sql);
         echo "<li style='color:green;'>Success: Table structure updated.</li>";
     } catch (\PDOException $e) {
-        echo "<li style='color:red;'>Error: " . $e->getMessage() . "</li>";
+        echo "<li style='color:red;'>Error executing query: " . $e->getMessage() . "</li>";
     }
+}
+
+// Special check for stems_path as ALTER TABLE IF NOT EXISTS is not supported in older MySQL
+try {
+    $check = $db->query("SHOW COLUMNS FROM `beats` LIKE 'stems_path'");
+    if (!$check->fetch()) {
+        $db->exec("ALTER TABLE `beats` ADD COLUMN `stems_path` VARCHAR(255) AFTER `sample_path`;");
+        echo "<li style='color:green;'>Success: stems_path column added to beats table.</li>";
+    } else {
+        echo "<li style='color:blue;'>Info: stems_path column already exists.</li>";
+    }
+} catch (\PDOException $e) {
+    echo "<li style='color:red;'>Error updating beats table: " . $e->getMessage() . "</li>";
 }
 
 echo "</ul>";
