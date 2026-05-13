@@ -87,7 +87,9 @@ class Email {
             <p>Your exclusive master file is now available for download:</p>
             <a href='$download_url' style='display:inline-block; background:#000; color:#fff; padding:14px 28px; text-decoration:none; border-radius:999px; font-weight:bold;'>Download Master (.WAV)</a>
 
-            " . (!empty($sale['stems_path']) ? "<p style='margin-top:10px;'>Track Stems are also included in your download package.</p>" : "") . "
+            " . (!empty($sale['stems_path']) ? "
+            <p style='margin-top:10px;'>Track Stems are also included in your download package:</p>
+            <a href='{$download_url}&type=stems' style='display:inline-block; background:#f0f0f0; color:#000; padding:10px 20px; text-decoration:none; border-radius:999px; font-size:13px; font-weight:bold;'>Download Stems (.ZIP)</a>" : "") . "
 
             <p style='margin-top:30px; color:#d93025; font-size:13px; font-weight:bold;'>CRITICAL: You must download this file within 24 hours. To ensure exclusivity, the file will be permanently deleted from our server after this window.</p>
         </div>";

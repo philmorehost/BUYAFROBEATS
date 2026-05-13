@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS `beats` (
     `top_bidder` VARCHAR(50),
     `audio_path` VARCHAR(255) NOT NULL,
     `sample_path` VARCHAR(255),
+    `stems_path` VARCHAR(255),
     `ends_at` TIMESTAMP NULL,
     `status` ENUM('live', 'sold', 'expired') DEFAULT 'live',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP

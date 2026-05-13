@@ -13,7 +13,7 @@ class Storage {
 
     public function upload_audio($file) {
         $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $allowed = ['wav', 'mp3', 'aif', 'aiff'];
+        $allowed = ['wav', 'mp3', 'aif', 'aiff', 'zip'];
         
         if (!in_array(strtolower($ext), $allowed)) {
             throw new \Exception("Invalid file type. Allowed: " . implode(', ', $allowed));

@@ -44,7 +44,9 @@ $queries = [
         `answer` TEXT NOT NULL,
         `sort_order` INT DEFAULT 0,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+    "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `stems_path` VARCHAR(255) AFTER `sample_path`;"
 ];
 
 echo "<h2>Database Update Tool</h2>";

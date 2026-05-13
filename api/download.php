@@ -13,7 +13,7 @@ if (empty($token)) {
 }
 
 $db = $core->db();
-$stmt = $db->prepare("SELECT s.*, b.audio_path, b.title FROM sales s JOIN beats b ON s.beat_id = b.id WHERE s.download_token = ?");
+$stmt = $db->prepare("SELECT s.*, b.audio_path, b.stems_path, b.title FROM sales s JOIN beats b ON s.beat_id = b.id WHERE s.download_token = ?");
 $stmt->execute([$token]);
 $sale = $stmt->fetch();
 
@@ -27,4 +27,10 @@ if (strtotime($sale['expires_at']) < time()) {
 }
 
 $storage = new Storage();
-$storage->serve_download($sale['audio_path'], $sale['title'] . '.wav');
+$type = $_GET['type'] ?? 'audio';
+
+if ($type === 'stems' && !empty($sale['stems_path'])) {
+    $storage->serve_download($sale['stems_path'], $sale['title'] . '_Stems.zip');
+} else {
+    $storage->serve_download($sale['audio_path'], $sale['title'] . '.wav');
+}
