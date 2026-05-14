@@ -1,0 +1,8 @@
+Options -MultiViews
+RewriteEngine On
+RewriteBase /admin/
+
+# Internally rewrite /admin/page to /admin/page.php if it exists
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [L]

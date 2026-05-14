@@ -1,11 +1,15 @@
 Options -MultiViews
 RewriteEngine On
+RewriteBase /
 
 # 1. Redirect /index.php to /
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
 RewriteRule ^index\.php$ / [R=301,L]
 
 # 2. Redirect /some-page.php to /some-page (SEO)
+# Exclude admin and api directories from this redirect to avoid issues
+RewriteCond %{REQUEST_URI} !^/admin/
+RewriteCond %{REQUEST_URI} !^/api/
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
 RewriteRule ^(.+)\.php$ /$1 [R=301,L]
 
