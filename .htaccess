@@ -1,6 +1,20 @@
-# Empty .htaccess to test 500 error cause
+Options -MultiViews
 RewriteEngine On
-# Basic rules
-RewriteCond %{REQUEST_FILENAME} !-f
+
+# 1. Redirect /index.php to /
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
+RewriteRule ^index\.php$ / [R=301,L]
+
+# 2. Redirect /some-page.php to /some-page (SEO)
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
+RewriteRule ^(.+)\.php$ /$1 [R=301,L]
+
+# 3. Internally rewrite /some-page to /some-page.php if it exists
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . index.php [L]
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [L]
+
+# 4. Fallback for CMS-style clean URLs (if needed)
+# RewriteCond %{REQUEST_FILENAME} !-f
+# RewriteCond %{REQUEST_FILENAME} !-d
+# RewriteRule ^(.*)$ index.php [L]
