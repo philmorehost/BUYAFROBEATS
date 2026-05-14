@@ -14,9 +14,13 @@ RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
 RewriteRule ^(.+)\.php$ /$1 [R=301,L]
 
 # 3. Internally rewrite /some-page to /some-page.php if it exists
+# Exclude admin and api directories to let their own .htaccess handle them
+RewriteCond %{REQUEST_URI} !^/admin/
+RewriteCond %{REQUEST_URI} !^/api/
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
 RewriteRule ^(.*)$ $1.php [L]
+
 
 # 4. Fallback for CMS-style clean URLs (if needed)
 # RewriteCond %{REQUEST_FILENAME} !-f

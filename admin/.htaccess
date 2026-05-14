@@ -1,17 +1,8 @@
 Options -MultiViews
 RewriteEngine On
-RewriteBase /admin/
 
-# Explicitly map common admin paths to their .php files
-RewriteRule ^login$ login.php [L]
-RewriteRule ^index$ index.php [L]
-RewriteRule ^upload$ upload.php [L]
-RewriteRule ^settings$ settings.php [L]
-RewriteRule ^pages$ pages.php [L]
-RewriteRule ^faqs$ faqs.php [L]
-RewriteRule ^logout$ logout.php [L]
-
-# General rule for any other .php file
+# General rule for .php files in this directory
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
 RewriteRule ^(.*)$ $1.php [L]
+
