@@ -2,27 +2,21 @@ Options -MultiViews
 RewriteEngine On
 RewriteBase /
 
-# 1. Redirect /index.php to /
+# 1. Handle Admin Clean URLs (Priority)
+# If /admin/something is requested and /admin/something.php exists, rewrite to it.
+RewriteCond %{DOCUMENT_ROOT}/admin/$1.php -f
+RewriteRule ^admin/(.*)$ admin/$1.php [L]
+
+# 2. Redirect /index.php to /
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
 RewriteRule ^index\.php$ / [R=301,L]
 
-# 2. Redirect /some-page.php to /some-page (SEO)
-# Exclude admin and api directories from this redirect to avoid issues
-RewriteCond %{REQUEST_URI} !^/admin/
-RewriteCond %{REQUEST_URI} !^/api/
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
-RewriteRule ^(.+)\.php$ /$1 [R=301,L]
-
-# 3. Internally rewrite /some-page to /some-page.php if it exists
-# Exclude admin and api directories to let their own .htaccess handle them
-RewriteCond %{REQUEST_URI} !^/admin/
-RewriteCond %{REQUEST_URI} !^/api/
+# 3. Internally rewrite /page to /page.php for root files
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
 RewriteRule ^(.*)$ $1.php [L]
 
-
-# 4. Fallback for CMS-style clean URLs (if needed)
-# RewriteCond %{REQUEST_FILENAME} !-f
-# RewriteCond %{REQUEST_FILENAME} !-d
-# RewriteRule ^(.*)$ index.php [L]
+# 4. Redirect /page.php to /page (SEO) - Exclude Admin
+RewriteCond %{REQUEST_URI} !^/admin/
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
+RewriteRule ^(.+)\.php$ /$1 [R=301,L]
