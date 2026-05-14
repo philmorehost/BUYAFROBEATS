@@ -1,20 +1,6 @@
-Options -MultiViews
+# Empty .htaccess to test 500 error cause
 RewriteEngine On
-
-# Redirect /index.php to /
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
-RewriteRule ^index\.php$ / [R=301,L]
-
-# Redirect /page.php to /page
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
-RewriteRule ^(.+)\.php$ /$1 [R=301,L]
-
-# Internally rewrite /page to /page.php
+# Basic rules
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^(.*)$ $1.php [L]
-# Increase upload limits
-php_value upload_max_filesize 100M
-php_value post_max_size 100M
-php_value max_execution_time 600
-php_value max_input_time 600
+RewriteRule . index.php [L]
