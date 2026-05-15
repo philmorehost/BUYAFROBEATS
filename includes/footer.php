@@ -56,6 +56,6 @@ if (!isset($core) || !($core instanceof Core)) {
 
 <div id="toast-container"></div>
 <?php echo $core->render_footer_injection(); ?>
-<script src="assets/js/auction.js?v=1.2"></script>
+<script src="assets/js/auction.js?v=1.3"></script>
 </body>
 </html>

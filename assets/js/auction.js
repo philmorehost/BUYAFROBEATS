@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.innerText = "Processing...";
             
             try {
-                const res = await fetch('api/bid.php', {
+                const res = await fetch('api/bid', {
                     method: 'POST',
                     body: new FormData(bidForm),
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // SSE Integration
     try {
-        const evtSource = new EventSource('api/updates.php');
+        const evtSource = new EventSource('api/updates');
         evtSource.addEventListener('activity', (e) => {
             const act = JSON.parse(e.data);
             if (!activityList) return;
