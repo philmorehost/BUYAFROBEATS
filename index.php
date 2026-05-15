@@ -301,22 +301,24 @@ include __DIR__ . '/includes/header.php';
     }
 
     document.addEventListener('click', (e) => {
-        const trigger = e.target.closest('.open-bid') || e.target.closest('.lb-item');
+        const btn = e.target.closest('.open-bid');
+        const lb = e.target.closest('.lb-item');
+        const trigger = btn || lb;
 
         if (trigger) {
-            const btnData = trigger.dataset;
-
-            if (btnData.id) {
-                document.getElementById('modal-beat-id').value = btnData.id;
-                document.getElementById('modal-amount').value = btnData.min;
-                document.getElementById('modal-amount').min = btnData.min;
-                document.getElementById('modal-beat-info').innerHTML = `<strong>${btnData.title}</strong> <span class="spacer"></span> <span class="mono">Min: $${btnData.min}</span>`;
+            const data = trigger.dataset;
+            if (data.id) {
+                document.getElementById('modal-beat-id').value = data.id;
+                document.getElementById('modal-amount').value = data.min;
+                document.getElementById('modal-amount').min = data.min;
+                document.getElementById('modal-beat-info').innerHTML = `<strong>${data.title}</strong> <span class="spacer"></span> <span class="mono">Min: $${data.min}</span>`;
                 
                 refreshCaptcha();
                 modal.classList.add('show');
             }
         }
-        if (e.target === modal || e.target.id === 'close-modal') {
+
+        if (e.target === modal || e.target.id === 'close-modal' || e.target.closest('#close-modal')) {
             modal.classList.remove('show');
         }
     });
@@ -362,11 +364,15 @@ include __DIR__ . '/includes/header.php';
     // Global countdown timer
     setInterval(() => {
         document.querySelectorAll('[data-ends]').forEach(el => {
-            const endsAt = new Date(el.getAttribute('data-ends')).getTime();
+            const attr = el.getAttribute('data-ends');
+            if (!attr) return;
+            
+            // Format for cross-browser compatibility (replace space with T for ISO)
+            const endsAt = new Date(attr.replace(' ', 'T')).getTime();
             const now = new Date().getTime();
             const diff = endsAt - now;
 
-            if (diff <= 0) {
+            if (isNaN(endsAt) || diff <= 0) {
                 el.innerText = "CLOSED";
                 el.style.color = "var(--ink-mute)";
             } else {
