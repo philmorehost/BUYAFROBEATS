@@ -240,88 +240,76 @@ include __DIR__ . '/includes/header.php';
 <?php include __DIR__ . "/includes/footer.php"; ?>
 
 <script>
-    // SSE Real-time Pulse
-    let lastActivityId = 0;
-    const evtSource = new EventSource(`api/updates.php?last_id=${lastActivityId}`);
-
-    evtSource.addEventListener('activity', (e) => {
-        const data = JSON.parse(e.data);
-        lastActivityId = data.id;
-        
-        // Update Activity Feed
-        const feed = document.getElementById('activity-list');
-        const item = document.createElement('div');
-        item.className = 'activity-item fade-in';
-        item.innerHTML = `<span class="dot"></span><span><strong>@${data.user_handle}</strong> ${data.message}</span>`;
-        feed.prepend(item);
-        if (feed.children.length > 5) feed.lastChild.remove();
-
-        // Update Beat Card & Leaderboard
-        updateBeatUI(data.beat_id, data.current_bid, data.ends_at);
-        
-        // Toast for outbid
-        if (data.type === 'bid') {
-            showToast(`New bid on ${data.title}: $${data.current_bid}`);
-        }
-    });
-
-    function updateBeatUI(id, price, endsAt) {
-        const bidElements = document.querySelectorAll(`[data-beat-id="${id}"] .amt, [data-beat-id="${id}"] .current-bid-amount`);
-        bidElements.forEach(el => {
-            el.innerText = `$${Number(price).toLocaleString()}`;
-            el.classList.add('pulse-highlight');
-            setTimeout(() => el.classList.remove('pulse-highlight'), 1000);
-        });
-        
-        const timers = document.querySelectorAll(`[data-beat-id="${id}"] [data-ends]`);
-        timers.forEach(t => t.setAttribute('data-ends', endsAt));
-    }
-
-    function showToast(msg) {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerText = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 10);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
     // Modal Logic
     const modal = document.getElementById('bid-modal');
     const bidForm = document.getElementById('bid-form');
 
     function refreshCaptcha() {
+        const label = document.getElementById('captcha-label');
+        if (!label) return;
         const a = Math.floor(Math.random() * 10) + 1;
         const b = Math.floor(Math.random() * 10) + 1;
-        document.getElementById('captcha-label').innerText = `Security: ${a} + ${b} = ?`;
+        label.innerText = `Security: ${a} + ${b} = ?`;
         bidForm.dataset.ans = a + b;
     }
 
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.open-bid');
-        const lb = e.target.closest('.lb-item');
-        const trigger = btn || lb;
+    function openBidModal(data) {
+        if (!data || !data.id) return;
+        document.getElementById('modal-beat-id').value = data.id;
+        document.getElementById('modal-amount').value = data.min;
+        document.getElementById('modal-amount').min = data.min;
+        document.getElementById('modal-beat-info').innerHTML = `<strong>${data.title}</strong> <span class="spacer"></span> <span class="mono">Min: $${data.min}</span>`;
+        
+        refreshCaptcha();
+        modal.classList.add('show');
+    }
 
-        if (trigger) {
-            const data = trigger.dataset;
-            if (data.id) {
-                document.getElementById('modal-beat-id').value = data.id;
-                document.getElementById('modal-amount').value = data.min;
-                document.getElementById('modal-amount').min = data.min;
-                document.getElementById('modal-beat-info').innerHTML = `<strong>${data.title}</strong> <span class="spacer"></span> <span class="mono">Min: $${data.min}</span>`;
-                
-                refreshCaptcha();
-                modal.classList.add('show');
+    document.addEventListener('click', (e) => {
+        // Fallback for browsers that don't support .closest() on all elements
+        let target = e.target;
+        let trigger = null;
+        
+        while (target && target !== document) {
+            if (target.classList && (target.classList.contains('open-bid') || target.classList.contains('lb-item'))) {
+                trigger = target;
+                break;
             }
+            target = target.parentNode;
         }
 
-        if (e.target === modal || e.target.id === 'close-modal' || e.target.closest('#close-modal')) {
+        if (trigger) {
+            openBidModal(trigger.dataset);
+        }
+
+        if (e.target === modal || e.target.id === 'close-modal' || (e.target.closest && e.target.closest('#close-modal'))) {
             modal.classList.remove('show');
         }
     });
+
+    // SSE Real-time Pulse
+    let lastActivityId = 0;
+    try {
+        const evtSource = new EventSource(`api/updates.php?last_id=${lastActivityId}`);
+        evtSource.addEventListener('activity', (e) => {
+            const data = JSON.parse(e.data);
+            lastActivityId = data.id;
+            
+            const feed = document.getElementById('activity-list');
+            if (feed) {
+                const item = document.createElement('div');
+                item.className = 'activity-item fade-in';
+                item.innerHTML = `<span class="dot"></span><span><strong>@${data.user_handle}</strong> ${data.message}</span>`;
+                feed.prepend(item);
+                if (feed.children.length > 5) feed.lastChild.remove();
+            }
+
+            updateBeatUI(data.beat_id, data.current_bid, data.ends_at);
+            
+            if (data.type === 'bid') {
+                showToast(`New bid on ${data.title}: $${data.current_bid}`);
+            }
+        });
+    } catch(e) { console.error("SSE failed", e); }
 
     bidForm.addEventListener('submit', async (e) => {
         e.preventDefault();
