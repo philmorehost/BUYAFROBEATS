@@ -4,53 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastContainer = document.getElementById('toast-container');
     const activityList = document.getElementById('activity-list');
 
-    // SVG Generation Helpers
-    const hash = (s) => { 
-        let h = 2166136261; 
-        for (let i=0; i<s.length; i++){ h ^= s.charCodeAt(i); h = (h*16777619) >>> 0; } 
-        return h; 
-    };
-
-    const generateCover = (id, title, genre) => {
-        const h = hash(id + title);
-        const hue1 = h % 360; 
-        const hue2 = (h * 7) % 360; 
-        const angle = (h % 180) - 90;
-        const sc = 4 + (h % 4);
-        
-        let stripesHtml = '';
-        for(let i=0; i<sc; i++) {
-            const off = (i/sc)*100;
-            const w = (100/sc) * 0.45;
-            stripesHtml += `<rect x="${off}" y="0" width="${w}" height="100" fill="oklch(0.40 0.10 ${hue1 + i*20})" opacity="0.35" />`;
-        }
-
-        return `
-            <svg class="stripes" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient id="g-${id}" gradientTransform="rotate(${angle})">
-                        <stop offset="0%" stop-color="oklch(0.30 0.08 ${hue1})" />
-                        <stop offset="100%" stop-color="oklch(0.22 0.06 ${hue2})" />
-                    </linearGradient>
-                </defs>
-                <rect width="100" height="100" fill="url(#g-${id})" />
-                ${stripesHtml}
-                <text x="8" y="94" fill="oklch(0.95 0.01 85)" opacity="0.9" font-size="7" font-family="JetBrains Mono, monospace" letter-spacing="0.5">${genre.toUpperCase()}</text>
-            </svg>
-        `;
-    };
-
-    const generateWaveform = (seed) => {
-        const h = hash(seed);
-        let barsHtml = '';
-        for(let i=0; i<32; i++) {
-            const v = Math.sin((h + i*13)*0.013)*0.5 + 0.5;
-            const height = (0.2 + v*0.8) * 28 + 4;
-            barsHtml += `<div class="bar" style="height: ${height}px"></div>`;
-        }
-        return barsHtml;
-    };
-
+    // Player Logic
     let currentAudio = null;
     let audioTimer = null;
 
@@ -67,25 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.play svg').forEach(s => s.innerHTML = '<path d="M8 5v14l11-7z"/>');
     };
 
-    // Initialize existing cards
-    document.querySelectorAll('.card').forEach(card => {
-        const id = card.getAttribute('data-id');
-        const title = card.querySelector('.title').innerText;
-        const genre = card.querySelector('.producer').innerText.split(' · ').pop();
-        
-        const coverContainer = card.querySelector('.cover');
-        const existingSvg = coverContainer.querySelector('.stripes');
-        if (existingSvg) existingSvg.outerHTML = generateCover(id, title, genre);
-        
-        const waveContainer = card.querySelector('.wave');
-        waveContainer.innerHTML = generateWaveform(id);
-
+    // Global Click Listener for Player and Modal
+    document.addEventListener('click', (e) => {
         // Player Logic
-        const playBtn = card.querySelector('.play');
-        const sampleUrl = playBtn.getAttribute('data-sample');
-
-        playBtn.addEventListener('click', (e) => {
+        const playBtn = e.target.closest('.play');
+        if (playBtn) {
             e.stopPropagation();
+            const card = playBtn.closest('.card');
+            const sampleUrl = playBtn.getAttribute('data-sample');
 
             if (card.classList.contains('is-playing')) {
                 stopAudio();
@@ -93,14 +36,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!sampleUrl) {
-                showToast('No sample available for this beat.', 'error');
+                showToast('No sample available.', 'error');
                 return;
             }
 
             stopAudio();
-
             currentAudio = new Audio(sampleUrl);
-            currentAudio.play();
+            currentAudio.play().catch(err => {
+                showToast('Playback failed. Check your connection.', 'error');
+                console.error(err);
+            });
+            
             card.classList.add('is-playing');
             playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
 
@@ -111,18 +57,51 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 20000);
 
             currentAudio.onended = stopAudio;
-        });
+            return;
+        }
+
+        // Modal Logic
+        const trigger = e.target.closest('.open-bid') || e.target.closest('.lb-item');
+        if (trigger) {
+            const data = trigger.dataset;
+            if (data.id) {
+                document.getElementById('modal-beat-id').value = data.id;
+                document.getElementById('modal-amount').value = data.min;
+                document.getElementById('modal-amount').min = data.min;
+                document.getElementById('modal-beat-info').innerHTML = `<strong>${data.title}</strong> <span class="spacer"></span> <span class="mono">Min: $${data.min}</span>`;
+                
+                refreshCaptcha();
+                bidModal.classList.add('is-visible');
+            }
+        }
+
+        // Close Modal
+        if (e.target === bidModal || e.target.id === 'close-modal' || e.target.closest('#close-modal')) {
+            bidModal.classList.remove('is-visible');
+        }
     });
+
+    function refreshCaptcha() {
+        const label = document.getElementById('captcha-label');
+        if (!label) return;
+        const a = Math.floor(Math.random() * 10) + 1;
+        const b = Math.floor(Math.random() * 10) + 1;
+        label.innerText = `Security: ${a} + ${b} = ?`;
+        bidForm.dataset.ans = a + b;
+    }
 
     // Timer Logic
     const updateTimers = () => {
-        document.querySelectorAll('.timer').forEach(el => {
+        document.querySelectorAll('.timer, [data-ends]').forEach(el => {
             const ends = el.getAttribute('data-ends');
             if (!ends) return;
 
-            const diff = Math.max(0, Math.floor((new Date(ends).getTime() - Date.now()) / 1000));
-            if (diff <= 0) {
-                el.innerText = "Ending...";
+            // Format for cross-browser compatibility (replace space with T for ISO)
+            const endsAt = new Date(ends.replace(' ', 'T')).getTime();
+            const diff = Math.max(0, Math.floor((endsAt - Date.now()) / 1000));
+            
+            if (isNaN(endsAt) || diff <= 0) {
+                el.innerText = "CLOSED";
                 el.classList.add('danger');
                 return;
             }
@@ -131,116 +110,90 @@ document.addEventListener('DOMContentLoaded', () => {
             const s = diff % 60;
             el.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             
-            if (diff < 300) el.classList.add('danger');
+            if (diff < 120) el.classList.add('danger');
             else el.classList.remove('danger');
         });
     };
     setInterval(updateTimers, 1000);
     updateTimers();
 
-    // Modal Logic
-    document.querySelectorAll('.open-bid').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const beat = JSON.parse(btn.getAttribute('data-beat'));
-            document.getElementById('modal-beat-id').value = beat.id;
-            document.getElementById('modal-amount').min = (parseFloat(beat.current_bid) || parseFloat(beat.starting_bid)) + (beat.top_bidder ? 5 : 0);
-            document.getElementById('modal-amount').value = document.getElementById('modal-amount').min;
-            
-            document.getElementById('modal-beat-info').innerHTML = `
-                <div style="font-weight:600">${beat.title}</div>
-                <div style="flex:1"></div>
-                <div style="text-align:right">
-                    <div style="font-size:10px; color:var(--ink-mute)">CURRENT BID</div>
-                    <div style="font-weight:700; color:var(--accent)">$${beat.current_bid}</div>
-                </div>
-            `;
-            bidModal.classList.add('is-visible');
-        });
-    });
-
-    document.getElementById('close-modal').addEventListener('click', () => {
-        bidModal.classList.remove('is-visible');
-    });
-
     // Bid Submission
-    bidForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(bidForm);
-        
-        try {
-            const res = await fetch('api/bid', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await res.json();
+    if (bidForm) {
+        bidForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            if (data.success) {
-                showToast(`Bid placed successfully!`, 'ok');
-                bidModal.classList.remove('is-visible');
-                // Refresh will be handled by SSE or manual if stream fails
-            } else {
-                showToast(data.error || 'Failed to place bid', 'error');
+            const ans = bidForm.elements['captcha_ans'].value;
+            if (ans != bidForm.dataset.ans) {
+                showToast("Security check failed.", "error");
+                refreshCaptcha();
+                return;
             }
-        } catch (err) {
-            showToast('Network error', 'error');
-        }
-    });
+
+            const formData = new FormData(bidForm);
+            const submitBtn = bidForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Placing...";
+            
+            try {
+                const res = await fetch('api/bid.php', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast(`Bid placed successfully!`, 'ok');
+                    bidModal.classList.remove('is-visible');
+                    bidForm.reset();
+                } else {
+                    showToast(data.error || 'Failed to place bid', 'error');
+                }
+            } catch (err) {
+                showToast('Network error', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+            }
+        });
+    }
 
     // SSE Integration
-    const evtSource = new EventSource('api/stream');
-    
-    evtSource.addEventListener('activity', (e) => {
-        const act = JSON.parse(e.data);
-        const item = document.createElement('div');
-        item.className = 'activity-item';
-        item.style.animation = 'toastIn 0.3s ease';
-        item.innerHTML = `<span class="dot"></span><span><b>${act.user_handle}</b> ${act.message}</span>`;
-        activityList.prepend(item);
-        if (activityList.children.length > 8) activityList.lastChild.remove();
+    try {
+        const evtSource = new EventSource('api/updates.php');
         
-        if (act.type === 'bid') {
-            showToast(`${act.user_handle} bid $${act.amount} on a beat!`, 'ok');
-        }
-    });
-
-    evtSource.addEventListener('update', (e) => {
-        const beats = JSON.parse(e.data);
-        beats.forEach(b => {
-            const card = document.querySelector(`.card[data-id="${b.id}"]`);
-            if (card) {
-                const timerEl = card.querySelector('.timer');
-                const prevEnds = timerEl.getAttribute('data-ends');
-                
-                // Clock Extension Detection
-                if (prevEnds && b.ends_at && new Date(b.ends_at) > new Date(prevEnds)) {
-                    showToast(`Clock extended on "${card.querySelector('.title').innerText}"!`, 'ok');
-                    card.classList.add('is-extended');
-                    setTimeout(() => card.classList.remove('is-extended'), 2000);
-                }
-
-                card.querySelector('.v.accent').innerText = `$${parseFloat(b.current_bid).toFixed(2)}`;
-                timerEl.setAttribute('data-ends', b.ends_at);
-                
-                const diff = Math.max(0, Math.floor((new Date(b.ends_at).getTime() - Date.now()) / 1000));
-                const statusEl = card.querySelector('.status');
-                if (diff > 0 && diff < 120) {
-                    statusEl.innerText = 'ENDING';
-                    statusEl.className = 'status ending';
-                    card.classList.add('is-hot');
-                }
-
-                const stats = card.querySelector('.bidstats');
-                stats.innerHTML = `top <b>${b.top_bidder}</b>`;
+        evtSource.addEventListener('activity', (e) => {
+            const act = JSON.parse(e.data);
+            if (!activityList) return;
+            const item = document.createElement('div');
+            item.className = 'activity-item fade-in';
+            item.innerHTML = `<span class="dot"></span><span><b>@${act.user_handle}</b> ${act.message}</span>`;
+            activityList.prepend(item);
+            if (activityList.children.length > 5) activityList.lastChild.remove();
+            
+            if (act.type === 'bid') {
+                showToast(`New bid on ${act.title}: $${act.current_bid}`, 'ok');
             }
         });
-    });
+
+        // Optional: Update UI based on SSE updates
+        evtSource.addEventListener('update', (e) => {
+            const data = JSON.parse(e.data);
+            // This can be used to update all cards at once if needed
+        });
+    } catch(err) { console.warn("SSE failed", err); }
 
     // Toast Helper
     function showToast(msg, kind) {
         const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `<span class="tdot" style="background:${kind==='ok'?'var(--ok)':'var(--danger)'}"></span> ${msg}`;
+        toast.className = 'toast show';
+        toast.style.background = kind === 'ok' ? 'var(--ok)' : 'var(--danger)';
+        toast.innerHTML = `<span class="tdot" style="background:#fff"></span> ${msg}`;
         toastContainer.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 400);
+        }, 4000);
     }
 });

@@ -90,9 +90,14 @@ try {
     // Proxy external URL (users never see the real URL)
     if ($external_url) {
         $mime = 'application/octet-stream';
-        if (preg_match('/\.(mp3|wav|aif|aiff)$/i', $external_url)) {
+        $ext = strtolower(pathinfo($external_url, PATHINFO_EXTENSION));
+        if ($ext === 'mp3') {
             $mime = 'audio/mpeg';
-        } elseif (preg_match('/\.zip$/i', $external_url)) {
+        } elseif ($ext === 'wav') {
+            $mime = 'audio/wav';
+        } elseif (in_array($ext, ['aif', 'aiff'])) {
+            $mime = 'audio/x-aiff';
+        } elseif ($ext === 'zip') {
             $mime = 'application/zip';
         }
 
@@ -127,8 +132,6 @@ try {
         // Stream the file in 8KB chunks
         while (!feof($handle)) {
             echo fread($handle, 8192);
-            ob_flush();
-            flush();
         }
         fclose($handle);
         exit;
