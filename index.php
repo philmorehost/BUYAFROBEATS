@@ -146,8 +146,13 @@ include __DIR__ . '/includes/header.php';
                                             <b><?php echo $beat_bid_count; ?></b> bids · top <b><?php echo Core::escape($beat['top_bidder']); ?></b>
                                         <?php endif; ?>
                                     </div>
-                                    <?php if ($beat['status'] === 'live'): ?>
-                                        <button class="btn btn-primary open-bid" data-beat='<?php echo json_encode($beat); ?>'>Place bid</button>
+                                    <?php if ($beat['status'] === 'live'): 
+                                        $min_bid = empty($beat['top_bidder']) ? $beat['starting_bid'] : $beat['current_bid'] + 5;
+                                    ?>
+                                        <button class="btn btn-primary open-bid" 
+                                                data-id="<?php echo $beat['id']; ?>" 
+                                                data-title="<?php echo Core::escape($beat['title']); ?>" 
+                                                data-min="<?php echo $min_bid; ?>">Place bid</button>
                                     <?php else: ?>
                                         <button class="btn btn-primary" disabled>SOLD</button>
                                     <?php endif; ?>
@@ -167,7 +172,10 @@ include __DIR__ . '/includes/header.php';
                 </div>
                 <div id="leaderboard-items">
                     <?php foreach ($leaderboard as $i => $lb): ?>
-                        <div class="lb-item" data-beat-id="<?php echo $lb['id']; ?>">
+                        <div class="lb-item" data-beat-id="<?php echo $lb['id']; ?>" 
+                             data-id="<?php echo $lb['id']; ?>" 
+                             data-title="<?php echo Core::escape($lb['title']); ?>" 
+                             data-min="<?php echo empty($lb['top_bidder']) ? $lb['starting_bid'] : $lb['current_bid'] + 5; ?>">
                             <div class="lb-rank"><?php echo str_pad($i+1, 2, '0', STR_PAD_LEFT); ?></div>
                             <div class="lb-cover" style="background: oklch(0.3 0.08 <?php echo (crc32($lb['title']) % 360); ?>)"></div>
                             <div class="lb-info">
@@ -293,19 +301,12 @@ include __DIR__ . '/includes/header.php';
     }
 
     document.addEventListener('click', (e) => {
-        // Find if we clicked an open-bid button OR a leaderboard item
-        const lbItem = e.target.closest('.lb-item');
-        const openBidBtn = e.target.classList.contains('open-bid') ? e.target : e.target.closest('.open-bid');
-        
-        const trigger = openBidBtn || lbItem;
+        const trigger = e.target.closest('.open-bid') || e.target.closest('.lb-item');
 
-        if (trigger && (trigger.classList.contains('open-bid') || trigger.classList.contains('lb-item'))) {
-            // If it's a leaderboard item, we need to find the corresponding beat data
-            // For now, we'll trigger the bid modal using the data attributes
-            const btnData = trigger.classList.contains('open-bid') ? trigger.dataset : 
-                           document.querySelector(`.open-bid[data-id="${trigger.dataset.beatId}"]`)?.dataset;
+        if (trigger) {
+            const btnData = trigger.dataset;
 
-            if (btnData) {
+            if (btnData.id) {
                 document.getElementById('modal-beat-id').value = btnData.id;
                 document.getElementById('modal-amount').value = btnData.min;
                 document.getElementById('modal-amount').min = btnData.min;
@@ -335,7 +336,13 @@ include __DIR__ . '/includes/header.php';
         submitBtn.innerText = "Placing...";
 
         try {
-            const resp = await fetch('api/bid.php', { method: 'POST', body: formData });
+            const resp = await fetch('<?php echo $core->get_site_url(); ?>/api/bid.php', { 
+                method: 'POST', 
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
             const result = await resp.json();
             if (result.success) {
                 showToast("Bid placed successfully!");
