@@ -25,6 +25,17 @@ $beats = $auction->get_live_beats($genre, $search);
 $leaderboard = $auction->get_leaderboard();
 $activity = $core->db()->query("SELECT * FROM activity ORDER BY created_at DESC LIMIT 6")->fetchAll();
 
+// Pre-load all bid counts to avoid N+1 queries
+$beat_ids = array_column($beats, 'id');
+$bid_counts = [];
+if (!empty($beat_ids)) {
+    $placeholders = implode(',', $beat_ids);
+    $stmt = $core->db()->query("SELECT beat_id, COUNT(*) as bid_count FROM bids WHERE beat_id IN ($placeholders) GROUP BY beat_id");
+    foreach ($stmt->fetchAll() as $row) {
+        $bid_counts[$row['beat_id']] = $row['bid_count'];
+    }
+}
+
 $live_count = count($beats);
 $total_bids = $core->db()->query("SELECT COUNT(*) FROM bids")->fetchColumn();
 
@@ -77,13 +88,14 @@ include __DIR__ . '/includes/header.php';
                 </div>
             <?php else: ?>
                 <div class="grid">
-                    <?php foreach ($beats as $beat): 
+                    <?php foreach ($beats as $beat):
                         $timeLeft = $beat['ends_at'] ? strtotime($beat['ends_at']) - time() : null;
                         $status = $beat['status'];
+                        $beat_bid_count = $bid_counts[$beat['id']] ?? 0;
                         if ($status === 'live') {
                             if ($beat['ends_at'] && $timeLeft <= 0) $status = 'ending';
                             elseif ($timeLeft && $timeLeft < 300) $status = 'ending';
-                            elseif ($core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$beat['id']}")->fetchColumn() >= 4) $status = 'hot';
+                            elseif ($beat_bid_count >= 4) $status = 'hot';
                         }
                     ?>
                         <div class="card <?php echo ($status === 'hot' || $status === 'ending') ? 'is-hot' : ''; ?> <?php echo $status === 'sold' ? 'is-sold' : ''; ?>" data-id="<?php echo $beat['id']; ?>">
@@ -100,7 +112,7 @@ include __DIR__ . '/includes/header.php';
                                 </svg>
                                 <span class="status <?php echo $status; ?>"><?php echo strtoupper($status); ?></span>
                                 <span class="label"><?php echo $beat['duration']; ?></span>
-                                <button class="play" aria-label="Play" data-sample="<?php echo $beat['sample_path'] ? 'uploads/' . $beat['sample_path'] : ''; ?>">
+                                <button class="play" aria-label="Play" data-sample="<?php echo ($beat['sample_url'] || $beat['sample_path']) ? 'api/serve.php?beat_id=' . $beat['id'] . '&type=sample' : ''; ?>">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                                 </button>
                             </div>
@@ -127,7 +139,7 @@ include __DIR__ . '/includes/header.php';
                                         <?php elseif (empty($beat['top_bidder'])): ?>
                                             No bids yet · starts at <b>$<?php echo number_format($beat['starting_bid'], 2); ?></b>
                                         <?php else: ?>
-                                            <b><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$beat['id']}")->fetchColumn(); ?></b> bids · top <b><?php echo Core::escape($beat['top_bidder']); ?></b>
+                                            <b><?php echo $beat_bid_count; ?></b> bids · top <b><?php echo Core::escape($beat['top_bidder']); ?></b>
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($beat['status'] === 'live'): ?>
@@ -156,7 +168,7 @@ include __DIR__ . '/includes/header.php';
                             <div class="lb-cover" style="background: oklch(0.3 0.08 <?php echo (crc32($lb['title']) % 360); ?>)"></div>
                             <div class="lb-info">
                                 <div class="lb-title"><?php echo Core::escape($lb['title']); ?></div>
-                                <div class="lb-sub"><span class="bid-count"><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$lb['id']}")->fetchColumn(); ?> bids</span></div>
+                                <div class="lb-sub"><span class="bid-count"><?php echo $bid_counts[$lb['id']] ?? 0; ?> bids</span></div>
                             </div>
                             <div class="lb-bid">
                                 <div class="amt">$<?php echo number_format($lb['current_bid'], 0); ?></div>

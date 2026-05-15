@@ -21,9 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
-        
+
         // Extend execution time for large file uploads
-        set_time_limit(600); // 10 minutes
+        set_time_limit(1800); // 30 minutes for large stems
         
         $title = $_POST['title'] ?? '';
         $starting = $_POST['starting_bid'] ?? 0;
@@ -32,27 +32,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $genre = $_POST['genre'] ?? '';
         $duration = $_POST['duration'] ?? '';
 
-        if (empty($title) || $starting <= 0 || !isset($_FILES['audio'])) {
-            throw new \Exception("Please fill in all required fields and upload an audio file.");
+        if (empty($title) || $starting <= 0) {
+            throw new \Exception("Please fill in title and starting bid.");
         }
 
-        $storage = new Storage();
-        $filename = $storage->upload_audio($_FILES['audio']);
+        // Main audio: file OR URL (required)
+        $filename = null;
+        $audio_url = null;
+        if (!empty($_FILES['audio']['name'])) {
+            if ($_FILES['audio']['error'] !== UPLOAD_ERR_OK) {
+                throw new \Exception("Error uploading audio file.");
+            }
+            $storage = new Storage();
+            $filename = $storage->upload_audio($_FILES['audio']);
+        } elseif (!empty($_POST['audio_url'])) {
+            $audio_url = filter_var($_POST['audio_url'], FILTER_VALIDATE_URL);
+            if (!$audio_url) {
+                throw new \Exception("Invalid audio URL provided.");
+            }
+        } else {
+            throw new \Exception("Please upload an audio file or provide an audio URL.");
+        }
 
+        // Sample: file OR URL (optional)
         $sample_filename = null;
+        $sample_url = null;
         if (isset($_FILES['sample']) && $_FILES['sample']['error'] === UPLOAD_ERR_OK) {
+            $storage = new Storage();
             $sample_filename = $storage->upload_audio($_FILES['sample']);
+        } elseif (!empty($_POST['sample_url'])) {
+            $sample_url = filter_var($_POST['sample_url'], FILTER_VALIDATE_URL);
+            if (!$sample_url) {
+                throw new \Exception("Invalid sample URL provided.");
+            }
         }
 
+        // Stems: file OR URL (optional)
         $stems_filename = null;
+        $stems_url = null;
         if (isset($_FILES['stems']) && $_FILES['stems']['error'] === UPLOAD_ERR_OK) {
-            // Re-using upload_audio for stems (Storage handles extension validation)
+            $storage = new Storage();
             $stems_filename = $storage->upload_audio($_FILES['stems']);
+        } elseif (!empty($_POST['stems_url'])) {
+            $stems_url = filter_var($_POST['stems_url'], FILTER_VALIDATE_URL);
+            if (!$stems_url) {
+                throw new \Exception("Invalid stems URL provided.");
+            }
         }
 
-        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_path, sample_path, stems_path, status)
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')");
-        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename, $sample_filename, $stems_filename]);
+        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_path, audio_url, sample_path, sample_url, stems_path, stems_url, status)
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')");
+        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $filename, $audio_url, $sample_filename, $sample_url, $stems_filename, $stems_url]);
 
         $success = "Beat \"$title\" has been listed live!";
 
@@ -111,15 +141,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
                 <div class="field">
                     <label>Main Audio File (HQ)</label>
-                    <input type="file" name="audio" accept="audio/*" required>
+                    <input type="file" name="audio" accept="audio/*">
                 </div>
+                <div class="field">
+                    <label>OR Audio URL</label>
+                    <input type="url" name="audio_url" placeholder="https://example.com/audio.mp3">
+                </div>
+                <div class="field" style="opacity: 0.5; pointer-events: none;">
+                    <label>&nbsp;</label>
+                    <small style="color: var(--ink-mute);">Upload OR paste URL</small>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
                 <div class="field">
                     <label>Sample Audio (optional)</label>
                     <input type="file" name="sample" accept="audio/*">
                 </div>
                 <div class="field">
+                    <label>OR Sample URL</label>
+                    <input type="url" name="sample_url" placeholder="https://example.com/sample.mp3">
+                </div>
+                <div class="field" style="opacity: 0.5; pointer-events: none;">
+                    <label>&nbsp;</label>
+                    <small style="color: var(--ink-mute);">Upload OR paste URL</small>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+                <div class="field">
                     <label>Stems (ZIP, optional)</label>
                     <input type="file" name="stems" accept=".zip">
+                </div>
+                <div class="field">
+                    <label>OR Stems URL</label>
+                    <input type="url" name="stems_url" placeholder="https://example.com/stems.zip">
+                </div>
+                <div class="field" style="opacity: 0.5; pointer-events: none;">
+                    <label>&nbsp;</label>
+                    <small style="color: var(--ink-mute);">Upload OR paste URL</small>
                 </div>
             </div>
             

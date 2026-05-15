@@ -72,6 +72,27 @@ try {
     echo "<li style='color:red;'>Error updating beats table: " . $e->getMessage() . "</li>";
 }
 
+// Add URL columns for external file support
+try {
+    $check = $db->query("SHOW COLUMNS FROM `beats` LIKE 'audio_url'");
+    if (!$check->fetch()) {
+        $db->exec("ALTER TABLE `beats` ADD COLUMN `audio_url` VARCHAR(500) AFTER `audio_path`, ADD COLUMN `sample_url` VARCHAR(500) AFTER `sample_path`, ADD COLUMN `stems_url` VARCHAR(500) AFTER `stems_path`;");
+        echo "<li style='color:green;'>Success: URL columns added for external file support.</li>";
+    } else {
+        echo "<li style='color:blue;'>Info: URL columns already exist.</li>";
+    }
+} catch (\PDOException $e) {
+    echo "<li style='color:red;'>Error adding URL columns: " . $e->getMessage() . "</li>";
+}
+
+// Make audio_path nullable to support URL-only beats
+try {
+    $db->exec("ALTER TABLE `beats` MODIFY COLUMN `audio_path` VARCHAR(255)");
+    echo "<li style='color:green;'>Success: audio_path made nullable for URL-only support.</li>";
+} catch (\PDOException $e) {
+    // Might already be done
+}
+
 echo "</ul>";
 echo "<p><b>Update complete!</b> you can now use the CMS, FAQs, and Newsletter features.</p>";
 echo "<p><a href='index'>Go to Homepage</a> | <a href='admin/index'>Go to Admin</a></p>";

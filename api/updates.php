@@ -46,5 +46,5 @@ while (true) {
     ob_flush();
     flush();
 
-    sleep(2); // Poll every 2 seconds
+    sleep(5); // Poll every 5 seconds (was 2, causing DB exhaustion)
 }

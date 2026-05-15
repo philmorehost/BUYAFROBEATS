@@ -14,13 +14,15 @@ class Storage {
     public function upload_audio($file) {
         $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
         $allowed = ['wav', 'mp3', 'aif', 'aiff', 'zip'];
-        
+
         if (!in_array(strtolower($ext), $allowed)) {
             throw new \Exception("Invalid file type. Allowed: " . implode(', ', $allowed));
         }
 
-        if ($file['size'] > 100 * 1024 * 1024) { // 100MB limit
-            throw new \Exception("File is too large. Max 100MB.");
+        $max_size = (strtolower($ext) === 'zip') ? 500 * 1024 * 1024 : 100 * 1024 * 1024;
+        if ($file['size'] > $max_size) {
+            $max_mb = $max_size / 1024 / 1024;
+            throw new \Exception("File is too large. Max {$max_mb}MB for this file type.");
         }
 
         $filename = bin2hex(random_bytes(16)) . '.' . $ext;
