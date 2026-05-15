@@ -4,6 +4,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastContainer = document.getElementById('toast-container');
     const activityList = document.getElementById('activity-list');
 
+    // Trigger background maintenance (winner checks, cleanups)
+    // This offloads heavy tasks from the initial page load
+    setTimeout(() => {
+        fetch('api/cron').catch(err => console.debug("Cron skipped"));
+    }, 2000);
+
     // Sync server time offset (optional but good)
     let serverTimeOffset = 0; 
 

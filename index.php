@@ -14,13 +14,6 @@ use BAF\Auction;
 $core = Core::get_instance();
 $auction = new Auction($core);
 
-// Throttled background tasks
-$last_check = (int)$core->setting('last_auction_check', 0);
-if (time() - $last_check > 60) {
-    $auction->check_for_winners();
-    $auction->cleanup_sold_beats();
-    $core->update_setting('last_auction_check', time());
-}
 
 $genre = $_GET['genre'] ?? 'All';
 $search = $_GET['search'] ?? '';
