@@ -110,7 +110,7 @@ if (isset($_GET['export']) && $is_admin) {
         </div>
     <?php else: ?>
         <table class="log-table" style="margin-bottom:32px;">
-            <thead><tr><th>Beat</th><th>Current Bid</th><th>Bids</th><th>Top Bidder</th><th>Time Left</th></tr></thead>
+            <thead><tr><th>Beat</th><th>Current Bid</th><th>Bids</th><th>Top Bidder</th><th>Time Left</th><th>Actions</th></tr></thead>
             <tbody>
                 <?php foreach ($beats as $b): ?>
                     <tr>
@@ -119,6 +119,10 @@ if (isset($_GET['export']) && $is_admin) {
                         <td class="mono"><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$b['id']}")->fetchColumn(); ?></td>
                         <td class="mono" style="font-size:12px"><?php echo $b['top_bidder'] ?: '—'; ?></td>
                         <td class="mono" style="font-size:12px"><?php echo $b['ends_at'] ?: 'Not started'; ?></td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <a href="edit?id=<?php echo $b['id']; ?>" class="btn" style="font-size:10px; padding: 4px 8px; border: 1px solid var(--line); background: transparent;">Edit</a>
+                            <a href="delete?id=<?php echo $b['id']; ?>" class="btn" style="font-size:10px; padding: 4px 8px; color: var(--danger); border: 1px solid var(--danger); background: transparent;" onclick="return confirm('Are you sure you want to delete this beat? This cannot be undone.')">Delete</a>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

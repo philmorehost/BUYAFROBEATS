@@ -21,7 +21,7 @@ if (!$sale) {
 
 // Check expiry
 if (strtotime($sale['expires_at']) < time()) {
-    die("This download link has expired (7-day limit).");
+    die("This download link has expired (24-hour exclusivity limit).");
 }
 
 $type = $_GET['type'] ?? 'audio';

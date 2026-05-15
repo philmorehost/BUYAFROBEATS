@@ -23,9 +23,17 @@ try {
         exit('Beat not found');
     }
 
-    if ($beat['status'] !== 'live' && $beat['status'] !== 'sold') {
-        header('HTTP/1.1 410 Gone');
-        exit('Beat is no longer available');
+    if ($beat['status'] !== 'live') {
+        if ($beat['status'] === 'sold') {
+            // Check if sold more than 24 hours ago
+            if (strtotime($beat['ends_at']) < strtotime('-24 hours')) {
+                header('HTTP/1.1 410 Gone');
+                exit('Beat has vanished from our servers (24h exclusivity policy)');
+            }
+        } else {
+            header('HTTP/1.1 410 Gone');
+            exit('Beat is no longer available');
+        }
     }
 
     // Determine which file/URL to serve
