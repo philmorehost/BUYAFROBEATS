@@ -104,25 +104,50 @@ class Auction {
 
     public function cleanup_sold_beats() {
         $db = $this->core->db();
-        // Find beats sold more than 24 hours ago that are still marked as 'sold'
-        $stmt = $db->prepare("SELECT * FROM beats WHERE status = 'sold' AND ends_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+        // Find beats sold more than 24 hours ago
+        // We join with sales to check payment status
+        $stmt = $db->prepare("
+            SELECT b.*, s.payment_status, s.delivery_id 
+            FROM beats b 
+            LEFT JOIN sales s ON b.id = s.beat_id 
+            WHERE b.status = 'sold' AND b.ends_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        ");
         $stmt->execute();
         $expired_beats = $stmt->fetchAll();
 
         foreach ($expired_beats as $beat) {
             $db->beginTransaction();
             try {
-                // Delete audio file
-                if (!empty($beat['audio_path'])) {
-                    $file_path = __DIR__ . '/../' . $beat['audio_path'];
-                    if (file_exists($file_path)) {
-                        unlink($file_path);
+                if ($beat['payment_status'] === 'completed') {
+                    // PAID: Expire and delete files (24h exclusivity policy)
+                    $storage = new \BAF\Storage();
+                    $files = ['audio_path', 'sample_path', 'stems_path'];
+                    foreach ($files as $col) {
+                        if (!empty($beat[$col])) {
+                            $path = $storage->get_file_path($beat[$col]);
+                            if (file_exists($path)) @unlink($path);
+                        }
                     }
-                }
 
-                // Mark status as 'expired' (meaning vanished from site)
-                $stmt = $db->prepare("UPDATE beats SET status = 'expired', audio_path = '' WHERE id = ?");
-                $stmt->execute([$beat['id']]);
+                    $stmt = $db->prepare("UPDATE beats SET status = 'expired', audio_path = '', sample_path = '', stems_path = '' WHERE id = ?");
+                    $stmt->execute([$beat['id']]);
+                } else {
+                    // UNPAID: Reverse back to market
+                    // Reset beat to live, clear timer and top bidder
+                    $stmt = $db->prepare("UPDATE beats SET status = 'live', top_bidder = NULL, current_bid = starting_bid, ends_at = NULL WHERE id = ?");
+                    $stmt->execute([$beat['id']]);
+
+                    // Delete the failed sales record
+                    if ($beat['delivery_id']) {
+                        $stmt = $db->prepare("DELETE FROM sales WHERE delivery_id = ?");
+                        $stmt->execute([$beat['delivery_id']]);
+                    }
+
+                    // Optional: Log activity
+                    $stmt = $db->prepare("INSERT INTO activity (type, beat_id, user_handle, amount, message) VALUES ('system', ?, 'SYSTEM', 0, ?)");
+                    $msg = "Auction for " . $beat['title'] . " was reversed due to non-payment.";
+                    $stmt->execute([$beat['id'], $msg]);
+                }
 
                 $db->commit();
             } catch (\Exception $e) {
