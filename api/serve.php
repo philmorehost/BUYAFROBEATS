@@ -67,8 +67,12 @@ try {
         }
 
         $mime = 'application/octet-stream';
-        if (preg_match('/\.(mp3|wav|aif|aiff)$/i', $local_path)) {
+        if (preg_match('/\.mp3$/i', $local_path)) {
             $mime = 'audio/mpeg';
+        } elseif (preg_match('/\.wav$/i', $local_path)) {
+            $mime = 'audio/wav';
+        } elseif (preg_match('/\.(aif|aiff)$/i', $local_path)) {
+            $mime = 'audio/x-aiff';
         } elseif (preg_match('/\.zip$/i', $local_path)) {
             $mime = 'application/zip';
         }
