@@ -14,7 +14,9 @@ use BAF\Auction;
 $core = Core::get_instance();
 $auction = new Auction($core);
 
-// Performance: Maintenance tasks are now handled asynchronously via api/cron.php
+// Check for expired auctions and process winners
+$auction->check_for_winners();
+$auction->cleanup_sold_beats();
 
 $genre = $_GET['genre'] ?? 'All';
 $search = $_GET['search'] ?? '';
@@ -22,17 +24,6 @@ $search = $_GET['search'] ?? '';
 $beats = $auction->get_live_beats($genre, $search);
 $leaderboard = $auction->get_leaderboard();
 $activity = $core->db()->query("SELECT * FROM activity ORDER BY created_at DESC LIMIT 6")->fetchAll();
-
-// Pre-load bid counts for efficiency
-$beat_ids = array_column($beats, 'id');
-$bid_counts = [];
-if (!empty($beat_ids)) {
-    $placeholders = implode(',', $beat_ids);
-    $stmt = $core->db()->query("SELECT beat_id, COUNT(*) as bid_count FROM bids WHERE beat_id IN ($placeholders) GROUP BY beat_id");
-    foreach ($stmt->fetchAll() as $row) {
-        $bid_counts[$row['beat_id']] = $row['bid_count'];
-    }
-}
 
 $live_count = count($beats);
 $total_bids = $core->db()->query("SELECT COUNT(*) FROM bids")->fetchColumn();
@@ -89,15 +80,15 @@ include __DIR__ . '/includes/header.php';
                     <?php foreach ($beats as $beat): 
                         $timeLeft = $beat['ends_at'] ? strtotime($beat['ends_at']) - time() : null;
                         $status = $beat['status'];
-                        $bc = $bid_counts[$beat['id']] ?? 0;
                         if ($status === 'live') {
                             if ($beat['ends_at'] && $timeLeft <= 0) $status = 'ending';
                             elseif ($timeLeft && $timeLeft < 300) $status = 'ending';
-                            elseif ($bc >= 4) $status = 'hot';
+                            elseif ($core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$beat['id']}")->fetchColumn() >= 4) $status = 'hot';
                         }
                     ?>
                         <div class="card <?php echo ($status === 'hot' || $status === 'ending') ? 'is-hot' : ''; ?> <?php echo $status === 'sold' ? 'is-sold' : ''; ?>" data-id="<?php echo $beat['id']; ?>">
                             <div class="cover">
+                                <!-- Waveform/Cover SVG logic -->
                                 <svg class="stripes" viewBox="0 0 100 100" preserveAspectRatio="none">
                                     <defs>
                                         <linearGradient id="g-<?php echo $beat['id']; ?>" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -109,7 +100,7 @@ include __DIR__ . '/includes/header.php';
                                 </svg>
                                 <span class="status <?php echo $status; ?>"><?php echo strtoupper($status); ?></span>
                                 <span class="label"><?php echo $beat['duration']; ?></span>
-                                <button class="play" aria-label="Play" data-sample="<?php echo ($beat['sample_url'] || $beat['sample_path']) ? 'api/serve?beat_id=' . $beat['id'] . '&type=sample' : ''; ?>">
+                                <button class="play" aria-label="Play" data-sample="<?php echo $beat['sample_path'] ? 'uploads/' . $beat['sample_path'] : ''; ?>">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                                 </button>
                             </div>
@@ -126,7 +117,7 @@ include __DIR__ . '/includes/header.php';
                                 <div class="auction-row">
                                     <div><div class="k">Current bid</div><div class="v accent">$<?php echo number_format($beat['current_bid'], 2); ?></div></div>
                                     <div><div class="k"><?php echo empty($beat['top_bidder']) ? 'Auction clock' : 'Time left'; ?></div>
-                                         <div class="v timer" data-ends-ts="<?php echo $beat['ends_at'] ? strtotime($beat['ends_at']) : ''; ?>"><?php echo empty($beat['top_bidder']) ? '30:00' : '--:--'; ?></div>
+                                         <div class="v timer" data-ends="<?php echo $beat['ends_at']; ?>"><?php echo empty($beat['top_bidder']) ? '30:00' : '...'; ?></div>
                                     </div>
                                 </div>
                                 <div class="card-actions">
@@ -136,16 +127,11 @@ include __DIR__ . '/includes/header.php';
                                         <?php elseif (empty($beat['top_bidder'])): ?>
                                             No bids yet · starts at <b>$<?php echo number_format($beat['starting_bid'], 2); ?></b>
                                         <?php else: ?>
-                                            <b><?php echo $bc; ?></b> bids · top <b><?php echo Core::escape($beat['top_bidder']); ?></b>
+                                            <b><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$beat['id']}")->fetchColumn(); ?></b> bids · top <b><?php echo Core::escape($beat['top_bidder']); ?></b>
                                         <?php endif; ?>
                                     </div>
-                                    <?php if ($beat['status'] === 'live'): 
-                                        $min_bid = empty($beat['top_bidder']) ? $beat['starting_bid'] : $beat['current_bid'] + 5;
-                                    ?>
-                                        <button class="btn btn-primary open-bid" 
-                                                data-id="<?php echo $beat['id']; ?>" 
-                                                data-title="<?php echo Core::escape($beat['title']); ?>" 
-                                                data-min="<?php echo $min_bid; ?>">Place bid</button>
+                                    <?php if ($beat['status'] === 'live'): ?>
+                                        <button class="btn btn-primary open-bid" data-beat='<?php echo json_encode($beat); ?>'>Place bid</button>
                                     <?php else: ?>
                                         <button class="btn btn-primary" disabled>SOLD</button>
                                     <?php endif; ?>
@@ -165,15 +151,12 @@ include __DIR__ . '/includes/header.php';
                 </div>
                 <div id="leaderboard-items">
                     <?php foreach ($leaderboard as $i => $lb): ?>
-                        <div class="lb-item open-bid" 
-                             data-id="<?php echo $lb['id']; ?>" 
-                             data-title="<?php echo Core::escape($lb['title']); ?>" 
-                             data-min="<?php echo empty($lb['top_bidder']) ? $lb['starting_bid'] : $lb['current_bid'] + 5; ?>">
+                        <div class="lb-item" data-beat-id="<?php echo $lb['id']; ?>">
                             <div class="lb-rank"><?php echo str_pad($i+1, 2, '0', STR_PAD_LEFT); ?></div>
                             <div class="lb-cover" style="background: oklch(0.3 0.08 <?php echo (crc32($lb['title']) % 360); ?>)"></div>
                             <div class="lb-info">
                                 <div class="lb-title"><?php echo Core::escape($lb['title']); ?></div>
-                                <div class="lb-sub"><span class="bid-count"><?php echo $bid_counts[$lb['id']] ?? 0; ?> bids</span></div>
+                                <div class="lb-sub"><span class="bid-count"><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$lb['id']}")->fetchColumn(); ?> bids</span></div>
                             </div>
                             <div class="lb-bid">
                                 <div class="amt">$<?php echo number_format($lb['current_bid'], 0); ?></div>
@@ -219,7 +202,7 @@ include __DIR__ . '/includes/header.php';
                 <div class="field"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required></div>
             </div>
             <div class="field">
-                <label id="captcha-label">Security Check</label>
+                <label id="captcha-label">Security: 0 + 0 = ?</label>
                 <input type="number" name="captcha_ans" placeholder="Enter answer" required>
             </div>
             <div class="actions" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
@@ -231,3 +214,144 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <?php include __DIR__ . "/includes/footer.php"; ?>
+
+<script>
+    // SSE Real-time Pulse
+    let lastActivityId = 0;
+    const evtSource = new EventSource(`api/updates.php?last_id=${lastActivityId}`);
+
+    evtSource.addEventListener('activity', (e) => {
+        const data = JSON.parse(e.data);
+        lastActivityId = data.id;
+        
+        // Update Activity Feed
+        const feed = document.getElementById('activity-list');
+        const item = document.createElement('div');
+        item.className = 'activity-item fade-in';
+        item.innerHTML = `<span class="dot"></span><span><strong>@${data.user_handle}</strong> ${data.message}</span>`;
+        feed.prepend(item);
+        if (feed.children.length > 5) feed.lastChild.remove();
+
+        // Update Beat Card & Leaderboard
+        updateBeatUI(data.beat_id, data.current_bid, data.ends_at);
+        
+        // Toast for outbid
+        if (data.type === 'bid') {
+            showToast(`New bid on ${data.title}: $${data.current_bid}`);
+        }
+    });
+
+    function updateBeatUI(id, price, endsAt) {
+        const bidElements = document.querySelectorAll(`[data-beat-id="${id}"] .amt, [data-beat-id="${id}"] .current-bid-amount`);
+        bidElements.forEach(el => {
+            el.innerText = `$${Number(price).toLocaleString()}`;
+            el.classList.add('pulse-highlight');
+            setTimeout(() => el.classList.remove('pulse-highlight'), 1000);
+        });
+        
+        const timers = document.querySelectorAll(`[data-beat-id="${id}"] [data-ends]`);
+        timers.forEach(t => t.setAttribute('data-ends', endsAt));
+    }
+
+    function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Modal Logic
+    const modal = document.getElementById('bid-modal');
+    const bidForm = document.getElementById('bid-form');
+
+    function refreshCaptcha() {
+        const a = Math.floor(Math.random() * 10) + 1;
+        const b = Math.floor(Math.random() * 10) + 1;
+        document.getElementById('captcha-label').innerText = `Security: ${a} + ${b} = ?`;
+        bidForm.dataset.ans = a + b;
+    }
+
+    document.addEventListener('click', (e) => {
+        // Find if we clicked an open-bid button OR a leaderboard item
+        const lbItem = e.target.closest('.lb-item');
+        const openBidBtn = e.target.classList.contains('open-bid') ? e.target : e.target.closest('.open-bid');
+        
+        const trigger = openBidBtn || lbItem;
+
+        if (trigger && (trigger.classList.contains('open-bid') || trigger.classList.contains('lb-item'))) {
+            // If it's a leaderboard item, we need to find the corresponding beat data
+            // For now, we'll trigger the bid modal using the data attributes
+            const btnData = trigger.classList.contains('open-bid') ? trigger.dataset : 
+                           document.querySelector(`.open-bid[data-id="${trigger.dataset.beatId}"]`)?.dataset;
+
+            if (btnData) {
+                document.getElementById('modal-beat-id').value = btnData.id;
+                document.getElementById('modal-amount').value = btnData.min;
+                document.getElementById('modal-amount').min = btnData.min;
+                document.getElementById('modal-beat-info').innerHTML = `<strong>${btnData.title}</strong> <span class="spacer"></span> <span class="mono">Min: $${btnData.min}</span>`;
+                
+                refreshCaptcha();
+                modal.classList.add('show');
+            }
+        }
+        if (e.target === modal || e.target.id === 'close-modal') {
+            modal.classList.remove('show');
+        }
+    });
+
+    bidForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ans = bidForm.elements['captcha_ans'].value;
+        if (ans != bidForm.dataset.ans) {
+            alert("Security check failed. Please try again.");
+            refreshCaptcha();
+            return;
+        }
+
+        const formData = new FormData(bidForm);
+        const submitBtn = bidForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Placing...";
+
+        try {
+            const resp = await fetch('api/bid.php', { method: 'POST', body: formData });
+            const result = await resp.json();
+            if (result.success) {
+                showToast("Bid placed successfully!");
+                modal.classList.remove('show');
+                bidForm.reset();
+            } else {
+                alert(result.error || "Failed to place bid.");
+            }
+        } catch (err) {
+            alert("Connection error. Please try again.");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Place Bid →";
+        }
+    });
+
+    // Global countdown timer
+    setInterval(() => {
+        document.querySelectorAll('[data-ends]').forEach(el => {
+            const endsAt = new Date(el.getAttribute('data-ends')).getTime();
+            const now = new Date().getTime();
+            const diff = endsAt - now;
+
+            if (diff <= 0) {
+                el.innerText = "CLOSED";
+                el.style.color = "var(--ink-mute)";
+            } else {
+                const mins = Math.floor(diff / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                el.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+                if (mins < 2) el.style.color = "var(--danger)";
+            }
+        });
+    }, 1000);
+</script>

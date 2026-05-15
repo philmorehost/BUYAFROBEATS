@@ -18,31 +18,26 @@ $title = $site_title . " — exclusive beat auctions";
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" href="assets/css/style.css?v=1.5">
+    <link rel="stylesheet" href="assets/css/style.css?v=1.6">
     <?php echo $core->render_head_injection(); ?>
 </head>
 <body>
 
-<header class="topbar">
+<div class="topbar">
     <div class="topbar-inner">
-        <a href="index" class="logo">
-            <span class="dot"></span>
-            <div class="logo-text"><?php echo $core->setting('site_title', 'BEATZAZA'); ?><span>.COM</span></div>
-        </a>
-        
-        <nav class="nav-links">
-            <a href="index">Auctions</a>
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ live auctions</span></a>
+        <div class="tabs">
+            <a href="index" class="tab is-active">Auctions</a>
             <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="admin/index" style="color: var(--accent);">Studio</a>
+                <a href="admin/index" class="tab admin">Enter Studio</a>
             <?php else: ?>
-                <a href="login">Sign In</a>
+                <a href="register" class="tab">Signup</a>
+                <a href="login" class="tab">Login</a>
             <?php endif; ?>
-        </nav>
-
-        <div style="flex: 1;"></div>
-
-        <div id="top-counter" class="mono" style="font-size: 11px; color: var(--ink-mute);">
-            <span style="color: var(--ok);">●</span> Live
+        </div>
+        <div class="spacer"></div>
+        <div id="top-counter" class="counter">
+            <span class="live-dot"></span> <b>0</b> live · <b>0</b> total bids
         </div>
     </div>
-</header>
+</div>
