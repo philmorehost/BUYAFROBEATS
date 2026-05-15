@@ -215,9 +215,10 @@ html, body {
 }
 .field { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
 .field label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); text-transform: uppercase; }
-.field input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; color: var(--ink); font: inherit; outline: none; }
+.field input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; color: var(--ink); font: inherit; outline: none; width: 100%; }
 .field input:focus { border-color: var(--accent); }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row2 .field { min-width: 0; }
 
 /* Premium Footer */
 .site-f { background: var(--bg-2); border-top: 1px solid var(--line); margin-top: 80px; padding: 80px 0 40px; }

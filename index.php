@@ -134,7 +134,7 @@ include __DIR__ . '/includes/header.php';
                                     </div>
                                     <div class="bid-timer">
                                         <div class="label">Ends in</div>
-                                        <div class="val timer" data-ends="<?php echo $beat['ends_at']; ?>"><?php echo empty($beat['top_bidder']) ? '30:00' : '--:--'; ?></div>
+                                        <div class="val timer" data-ends-ts="<?php echo $beat['ends_at'] ? strtotime($beat['ends_at']) : ''; ?>"><?php echo empty($beat['top_bidder']) ? '30:00' : '--:--'; ?></div>
                                     </div>
                                 </div>
 

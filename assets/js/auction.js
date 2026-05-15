@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastContainer = document.getElementById('toast-container');
     const activityList = document.getElementById('activity-list');
 
+    // Sync server time offset (optional but good)
+    let serverTimeOffset = 0; 
+
     // Player Logic
     let currentAudio = null;
     let audioTimer = null;
@@ -83,25 +86,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!label) return;
         const a = Math.floor(Math.random() * 9) + 1;
         const b = Math.floor(Math.random() * 9) + 1;
-        label.innerText = `Security: ${a} + ${b} = ?`;
+        label.innerText = `Security Check: ${a} + ${b} = ?`;
         bidForm.dataset.ans = a + b;
     }
 
     // Timer Logic
     const updateTimers = () => {
+        const nowTs = Math.floor(Date.now() / 1000);
         document.querySelectorAll('.timer').forEach(el => {
-            const ends = el.getAttribute('data-ends');
-            if (!ends) {
+            const endsTs = el.getAttribute('data-ends-ts');
+            if (!endsTs) {
                 el.innerText = '30:00';
                 return;
             }
 
-            const endsAt = new Date(ends.replace(' ', 'T')).getTime();
-            const diff = Math.max(0, Math.floor((endsAt - Date.now()) / 1000));
+            const diff = Math.max(0, parseInt(endsTs) - nowTs);
             
-            if (isNaN(endsAt) || diff <= 0) {
+            if (diff <= 0) {
                 el.innerText = "CLOSED";
-                el.closest('.card')?.classList.add('is-sold');
+                el.style.color = 'var(--ink-mute)';
+                const card = el.closest('.card');
+                if (card && !card.classList.contains('is-sold')) {
+                   // Refresh after a small delay to show winner if status changed
+                }
                 return;
             }
 
@@ -144,6 +151,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(`Bid confirmed!`, 'ok');
                     bidModal.classList.remove('is-visible');
                     bidForm.reset();
+                    
+                    // Immediately update local timer to avoid "Closed" flicker
+                    if (data.ends_at) {
+                        const card = document.querySelector(`.card[data-id="${bidForm.elements['beat_id'].value}"]`);
+                        if (card) {
+                            const timer = card.querySelector('.timer');
+                            if (timer) timer.setAttribute('data-ends-ts', data.ends_at);
+                        }
+                    }
                 } else {
                     showToast(data.error || 'Bid failed', 'error');
                 }
@@ -174,9 +190,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update specific card UI
                 const card = document.querySelector(`.card[data-id="${act.beat_id}"]`);
                 if (card) {
-                    card.querySelector('.val').innerText = `$${Number(act.current_bid).toLocaleString()}`;
-                    card.querySelector('.timer').setAttribute('data-ends', act.ends_at);
-                    card.querySelector('.card-meta b').innerText = parseInt(card.querySelector('.card-meta b').innerText) + 1;
+                    const priceVal = card.querySelector('.bid-info .val');
+                    if (priceVal) priceVal.innerText = `$${Number(act.current_bid).toLocaleString()}`;
+                    
+                    const timer = card.querySelector('.timer');
+                    // Convert date string to timestamp for the new JS logic
+                    if (timer && act.ends_at) {
+                        const ts = Math.floor(new Date(act.ends_at.replace(' ', 'T')).getTime() / 1000);
+                        timer.setAttribute('data-ends-ts', ts);
+                    }
+                    
+                    const count = card.querySelector('.card-meta b');
+                    if (count) count.innerText = parseInt(count.innerText) + 1;
                 }
             }
         });
@@ -195,6 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         toast.innerText = msg;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+            setTimeout(() => toast.remove(), 400);
+        }, 4000);
     }
 });

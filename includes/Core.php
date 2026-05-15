@@ -7,6 +7,7 @@ class Core {
     private $settings = [];
 
     private function __construct() {
+        date_default_timezone_set('UTC');
         $config_file = __DIR__ . '/../config.php';
         if (!file_exists($config_file)) {
             if (strpos($_SERVER['REQUEST_URI'], '/install/') === false) {
