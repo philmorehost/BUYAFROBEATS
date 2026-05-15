@@ -81,14 +81,6 @@ try {
 
     // Proxy external URL (users never see the real URL)
     if ($external_url) {
-        $ctx = stream_context_create(['http' => ['timeout' => 30]]);
-        $content = @file_get_contents($external_url, false, $ctx);
-
-        if ($content === false) {
-            header('HTTP/1.1 503 Service Unavailable');
-            exit('Unable to fetch file from external source');
-        }
-
         $mime = 'application/octet-stream';
         if (preg_match('/\.(mp3|wav|aif|aiff)$/i', $external_url)) {
             $mime = 'audio/mpeg';
@@ -103,9 +95,34 @@ try {
         }
 
         header('Content-Type: ' . $mime);
-        header('Content-Length: ' . strlen($content));
         header('Cache-Control: public, max-age=3600');
-        echo $content;
+        
+        // Use streaming instead of file_get_contents to save memory
+        $ctx = stream_context_create(['http' => ['timeout' => 60]]);
+        $handle = @fopen($external_url, 'rb', false, $ctx);
+        
+        if ($handle === false) {
+            header('HTTP/1.1 503 Service Unavailable');
+            exit('Unable to fetch file from external source');
+        }
+
+        // Try to get content length if available
+        $meta = stream_get_meta_data($handle);
+        if (isset($meta['wrapper_data'])) {
+            foreach ($meta['wrapper_data'] as $header) {
+                if (stripos($header, 'Content-Length:') === 0) {
+                    header($header);
+                }
+            }
+        }
+
+        // Stream the file in 8KB chunks
+        while (!feof($handle)) {
+            echo fread($handle, 8192);
+            ob_flush();
+            flush();
+        }
+        fclose($handle);
         exit;
     }
 } catch (\Exception $e) {

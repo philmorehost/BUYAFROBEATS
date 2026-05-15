@@ -76,8 +76,14 @@ try {
 try {
     $check = $db->query("SHOW COLUMNS FROM `beats` LIKE 'audio_url'");
     if (!$check->fetch()) {
-        $db->exec("ALTER TABLE `beats` ADD COLUMN `audio_url` VARCHAR(500) AFTER `audio_path`, ADD COLUMN `sample_url` VARCHAR(500) AFTER `sample_path`, ADD COLUMN `stems_url` VARCHAR(500) AFTER `stems_path`;");
-        echo "<li style='color:green;'>Success: URL columns added for external file support.</li>";
+        $db->exec("ALTER TABLE `beats` 
+            ADD COLUMN `audio_url` VARCHAR(500) AFTER `audio_path`, 
+            ADD COLUMN `sample_url` VARCHAR(500) AFTER `sample_path`, 
+            ADD COLUMN `stems_url` VARCHAR(500) AFTER `stems_path`,
+            MODIFY COLUMN `audio_path` VARCHAR(255) NULL,
+            MODIFY COLUMN `sample_path` VARCHAR(255) NULL,
+            MODIFY COLUMN `stems_path` VARCHAR(255) NULL;");
+        echo "<li style='color:green;'>Success: URL columns added and paths made nullable.</li>";
     } else {
         echo "<li style='color:blue;'>Info: URL columns already exist.</li>";
     }
@@ -85,13 +91,15 @@ try {
     echo "<li style='color:red;'>Error adding URL columns: " . $e->getMessage() . "</li>";
 }
 
-// Make audio_path nullable to support URL-only beats
+// Add indexes for performance
 try {
-    $db->exec("ALTER TABLE `beats` MODIFY COLUMN `audio_path` VARCHAR(255)");
-    echo "<li style='color:green;'>Success: audio_path made nullable for URL-only support.</li>";
+    $db->exec("ALTER TABLE `beats` ADD INDEX `idx_status` (`status`), ADD INDEX `idx_ends_at` (`ends_at`);");
+    echo "<li style='color:green;'>Success: Performance indexes added to beats table.</li>";
 } catch (\PDOException $e) {
-    // Might already be done
+    // Indexes might already exist
+    echo "<li style='color:blue;'>Info: Performance indexes already exist or could not be added.</li>";
 }
+
 
 echo "</ul>";
 echo "<p><b>Update complete!</b> you can now use the CMS, FAQs, and Newsletter features.</p>";

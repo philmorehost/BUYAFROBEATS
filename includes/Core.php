@@ -94,6 +94,13 @@ class Core {
         return $this->settings[$key] ?? $default;
     }
 
+    public function update_setting($key, $value) {
+        if (!$this->db) return false;
+        $this->settings[$key] = $value;
+        $stmt = $this->db->prepare("INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?");
+        return $stmt->execute([$key, $value, $value]);
+    }
+
     // Security Helpers
     public static function escape($str) {
         return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');

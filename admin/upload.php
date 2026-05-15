@@ -41,7 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $audio_url = null;
         if (!empty($_FILES['audio']['name'])) {
             if ($_FILES['audio']['error'] !== UPLOAD_ERR_OK) {
-                throw new \Exception("Error uploading audio file.");
+                $err_code = $_FILES['audio']['error'];
+                $msg = "Error uploading audio file.";
+                if ($err_code === UPLOAD_ERR_INI_SIZE || $err_code === UPLOAD_ERR_FORM_SIZE) {
+                    $msg = "Audio file is too large for the server. Check your php.ini limits.";
+                }
+                throw new \Exception($msg);
             }
             $storage = new Storage();
             $filename = $storage->upload_audio($_FILES['audio']);
@@ -70,7 +75,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Stems: file OR URL (optional)
         $stems_filename = null;
         $stems_url = null;
-        if (isset($_FILES['stems']) && $_FILES['stems']['error'] === UPLOAD_ERR_OK) {
+        if (isset($_FILES['stems']) && $_FILES['stems']['name']) {
+            if ($_FILES['stems']['error'] !== UPLOAD_ERR_OK) {
+                $err_code = $_FILES['stems']['error'];
+                $msg = "Error uploading stems ZIP.";
+                if ($err_code === UPLOAD_ERR_INI_SIZE || $err_code === UPLOAD_ERR_FORM_SIZE) {
+                    $msg = "Stems ZIP is too large for the server. Server limit: " . ini_get('upload_max_filesize');
+                }
+                throw new \Exception($msg);
+            }
             $storage = new Storage();
             $stems_filename = $storage->upload_audio($_FILES['stems']);
         } elseif (!empty($_POST['stems_url'])) {
@@ -131,6 +144,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="admin-banner"><span style="width:6,height:6,borderRadius:'50%',background:'var(--accent)',display:'inline-block'"></span> Admin · Listing a new drop</div>
         <h2>List a new beat</h2>
         <p class="lead">It goes live immediately. The 30-minute countdown starts on the first bid.</p>
+        <div style="font-size: 11px; color: var(--ink-mute); margin-bottom: 20px; padding: 10px; background: var(--bg-2); border-radius: 8px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Server Max Upload: <b><?php echo ini_get('upload_max_filesize'); ?></b> / Post Limit: <b><?php echo ini_get('post_max_size'); ?></b>
+        </div>
 
         <?php if ($error): ?><div style="color:var(--danger); margin-bottom:20px;"><?php echo $error; ?></div><?php endif; ?>
         <?php if ($success): ?><div style="color:var(--ok); margin-bottom:20px;"><?php echo $success; ?></div><?php endif; ?>

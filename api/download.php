@@ -63,21 +63,38 @@ if ($local_file) {
 
 // Serve external URL
 if ($external_url) {
-    $ctx = stream_context_create(['http' => ['timeout' => 30]]);
-    $content = @file_get_contents($external_url, false, $ctx);
-
-    if ($content === false) {
-        die("Unable to download file from external source. Please try again later.");
-    }
-
     header('Content-Description: File Transfer');
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
     header('Expires: 0');
     header('Cache-Control: must-revalidate');
     header('Pragma: public');
-    header('Content-Length: ' . strlen($content));
-    echo $content;
+
+    // Use streaming instead of file_get_contents to save memory
+    $ctx = stream_context_create(['http' => ['timeout' => 60]]);
+    $handle = @fopen($external_url, 'rb', false, $ctx);
+
+    if ($handle === false) {
+        die("Unable to download file from external source. Please try again later.");
+    }
+
+    // Try to get content length if available
+    $meta = stream_get_meta_data($handle);
+    if (isset($meta['wrapper_data'])) {
+        foreach ($meta['wrapper_data'] as $header) {
+            if (stripos($header, 'Content-Length:') === 0) {
+                header($header);
+            }
+        }
+    }
+
+    // Stream the file in 8KB chunks
+    while (!feof($handle)) {
+        echo fread($handle, 8192);
+        ob_flush();
+        flush();
+    }
+    fclose($handle);
     exit;
 }
 

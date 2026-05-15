@@ -14,9 +14,13 @@ use BAF\Auction;
 $core = Core::get_instance();
 $auction = new Auction($core);
 
-// Check for expired auctions and process winners
-$auction->check_for_winners();
-$auction->cleanup_sold_beats();
+// Throttled: Check for expired auctions and process winners once every 60 seconds
+$last_check = (int)$core->setting('last_auction_check', 0);
+if (time() - $last_check > 60) {
+    $auction->check_for_winners();
+    $auction->cleanup_sold_beats();
+    $core->update_setting('last_auction_check', time());
+}
 
 $genre = $_GET['genre'] ?? 'All';
 $search = $_GET['search'] ?? '';
