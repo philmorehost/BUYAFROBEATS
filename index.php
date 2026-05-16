@@ -18,33 +18,64 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <main class="page">
-    <section class="hero">
-        <div class="eyebrow mono">
-            <span class="live-dot"></span>
-            LIVE NOW · BIDDING OPEN
-        </div>
-        <h1>One-of-one beats.<br><em>Highest bid wins.</em></h1>
-        <p>Every beat here is mine. Bid, outbid, lose sleep. When the 30-minute timer hits zero, the file ships to the winner's inbox and the beat <em style="color:var(--accent); font-style:normal;">vanishes</em> from this site forever.</p>
-        
-        <div class="hero-stats">
-            <div class="stat-pill">
-                <span class="k">Open</span>
-                <span class="v accent"><?php echo count($beats); ?></span>
+    <div class="hero-layout">
+        <section class="hero">
+            <div class="eyebrow mono">
+                <span class="live-dot"></span>
+                LIVE NOW · BIDDING OPEN
             </div>
-            <div class="stat-pill">
-                <span class="k">Active Bids</span>
-                <span class="v">124</span>
+            <h1>One-of-one beats.<br><em>Highest bid wins.</em></h1>
+            <p>Every beat here is mine. Bid, outbid, lose sleep. When the 30-minute timer hits zero, the file ships to the winner's inbox and the beat <em style="color:var(--accent); font-style:normal;">vanishes</em> from this site forever.</p>
+            
+            <div class="hero-stats">
+                <div class="stat-pill">
+                    <span class="k">Open</span>
+                    <span class="v accent"><?php echo count($beats); ?></span>
+                </div>
+                <div class="stat-pill">
+                    <span class="k">Active Bids</span>
+                    <span class="v">124</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="k">Sold</span>
+                    <span class="v">7</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="k">Timer</span>
+                    <span class="v">30:00 from first bid</span>
+                </div>
             </div>
-            <div class="stat-pill">
-                <span class="k">Sold</span>
-                <span class="v">7</span>
+        </section>
+
+        <aside class="top-sidebar">
+            <div class="leaderboard">
+                <div class="lb-head">
+                    <h3><span class="live-dot" style="background:var(--ok)"></span> Leaderboard</h3>
+                    <span class="hint">TOP 6 · LIVE</span>
+                </div>
+                
+                <div class="lb-list">
+                    <?php if (empty($leaderboard)): ?>
+                        <div class="lb-empty mono" style="font-size: 12px; color: var(--ink-mute); padding: 40px 0; text-align: center;">No live auctions right now.</div>
+                    <?php endif; ?>
+                    <?php foreach ($leaderboard as $index => $lb): ?>
+                        <div class="lb-item">
+                            <div class="lb-rank">0<?php echo $index + 1; ?></div>
+                            <div class="lb-cover" style="background: var(--bg-3) url('api/serve.php?beat_id=<?php echo $lb['id']; ?>&type=cover') center/cover;"></div>
+                            <div class="lb-info">
+                                <div class="lb-title ink-bright"><?php echo Core::escape($lb['title']); ?></div>
+                                <div class="lb-sub"><?php echo count($auction->get_bids($lb['id'])); ?> bids</div>
+                            </div>
+                            <div class="lb-bid">
+                                <div class="amt">$<?php echo number_format($lb['current_bid'], 0); ?></div>
+                                <div class="lb-sub timer" data-ends="<?php echo strtotime($lb['ends_at']); ?>" style="text-align: right;">--:--</div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
-            <div class="stat-pill">
-                <span class="k">Timer</span>
-                <span class="v">30:00 from first bid</span>
-            </div>
-        </div>
-    </section>
+        </aside>
+    </div>
 
     <div class="layout">
         <div class="main-content">
@@ -107,48 +138,21 @@ include __DIR__ . '/includes/header.php';
         </div>
 
         <aside class="sidebar">
-            <div class="leaderboard">
-                <div class="lb-head">
-                    <h3><span class="live-dot" style="background:var(--ok)"></span> Leaderboard</h3>
-                    <span class="hint">TOP 6 · LIVE</span>
+            <div class="lb-activity">
+                <h4>Live Activity</h4>
+                <div id="activity-feed">
+                    <!-- Populated by SSE -->
                 </div>
-                
-                <div class="lb-list">
-                    <?php if (empty($leaderboard)): ?>
-                        <div class="lb-empty mono" style="font-size: 12px; color: var(--ink-mute); padding: 40px 0; text-align: center;">No live auctions right now.</div>
-                    <?php endif; ?>
-                    <?php foreach ($leaderboard as $index => $lb): ?>
-                        <div class="lb-item">
-                            <div class="lb-rank">0<?php echo $index + 1; ?></div>
-                            <div class="lb-cover" style="background: var(--bg-3) url('api/serve.php?beat_id=<?php echo $lb['id']; ?>&type=cover') center/cover;"></div>
-                            <div class="lb-info">
-                                <div class="lb-title ink-bright"><?php echo Core::escape($lb['title']); ?></div>
-                                <div class="lb-sub"><?php echo count($auction->get_bids($lb['id'])); ?> bids</div>
-                            </div>
-                            <div class="lb-bid">
-                                <div class="amt">$<?php echo number_format($lb['current_bid'], 0); ?></div>
-                                <div class="lb-sub timer" data-ends="<?php echo strtotime($lb['ends_at']); ?>" style="text-align: right;">--:--</div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+            </div>
 
-                <div class="lb-activity" style="border-top: 1px solid var(--line); padding-top: 24px;">
-                    <h4>Live Activity</h4>
-                    <div id="activity-feed">
-                        <!-- Populated by SSE -->
-                    </div>
-                </div>
-
-                <div class="info-block" style="background: rgba(255,159,0,0.05); border-color: rgba(255,159,0,0.2);">
-                    <h4>If you win</h4>
-                    <ul>
-                        <li><b>It's yours, 100%.</b> Full ownership — release, sync, sample, sell, no royalties.</li>
-                        <li>Credit <b>"Produced by OBV"</b> on every platform. One line, that's it.</li>
-                        <li><b>7 days to download.</b> Files wipe from our servers after a week.</li>
-                        <li>No credit = breach of contract.</li>
-                    </ul>
-                </div>
+            <div class="info-block" style="background: rgba(255,159,0,0.05); border-color: rgba(255,159,0,0.2);">
+                <h4>If you win</h4>
+                <ul>
+                    <li><b>It's yours, 100%.</b> Full ownership — release, sync, sample, sell, no royalties.</li>
+                    <li>Credit <b>"Produced by OBV"</b> on every platform. One line, that's it.</li>
+                    <li><b>7 days to download.</b> Files wipe from our servers after a week.</li>
+                    <li>No credit = breach of contract.</li>
+                </ul>
             </div>
         </aside>
     </div>
