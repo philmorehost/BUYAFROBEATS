@@ -62,9 +62,30 @@ $status = [
         .write-only { position: relative; }
         .write-only input { padding-right: 80px; }
         .write-only .mask-btn { position: absolute; right: 12px; top: 32px; font-size: 10px; font-weight: 700; color: var(--accent); cursor: pointer; text-transform: uppercase; }
+
+        /* Floating Save Button */
+        .floating-save { position: fixed; right: 40px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; background: var(--ok); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); cursor: pointer; z-index: 9999; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .floating-save:hover { transform: translateY(-50%) scale(1.1); box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+        .floating-save:active { transform: translateY(-50%) scale(0.9); }
+        .floating-save svg { width: 30px; height: 30px; }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 900px) {
+            .settings-layout { flex-direction: column; padding: 20px; gap: 20px; }
+            .settings-nav { width: 100%; position: sticky; top: 70px; background: var(--bg-white); z-index: 100; overflow-x: auto; display: flex; padding: 10px 0; border-bottom: 1px solid var(--line); }
+            .settings-nav a { flex-shrink: 0; white-space: nowrap; border-left: none; border-bottom: 2px solid transparent; }
+            .settings-nav a.active { border-left: none; border-bottom-color: var(--accent); background: transparent; }
+            .floating-save { right: 20px; width: 50px; height: 50px; }
+            .floating-save svg { width: 24px; height: 24px; }
+            .section { margin-bottom: 60px; }
+        }
     </style>
 </head>
 <body>
+
+<div id="save-all-btn" class="floating-save" title="Save All Changes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+</div>
 
 <div class="topbar">
     <div class="topbar-inner">
@@ -359,7 +380,31 @@ $status = [
             }
         });
     });
+    // Save All Button
+    document.getElementById('save-all-btn').addEventListener('click', async () => {
+        const allInputs = Array.from(inputs);
+        indicator.classList.add('is-saving');
+        
+        for (const input of allInputs) {
+            await save(input);
+        }
+        
+        indicator.classList.remove('is-saving');
+        showToast('All changes saved successfully');
+    });
+
+    function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:12px 24px; border-radius:50px; font-size:12px; font-weight:600; z-index:99999; animation: slideUp 0.3s ease-out;';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
 </script>
+<style>
+@keyframes slideUp { from { bottom: -50px; opacity: 0; } to { bottom: 20px; opacity: 1; } }
+</style>
 
 </body>
 </html>
