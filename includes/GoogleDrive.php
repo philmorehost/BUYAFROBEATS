@@ -118,6 +118,44 @@ class GoogleDrive {
     }
 
     /**
+     * Lists files in a specific folder.
+     */
+    public function list_files($parent_id = null, $q = "") {
+        $token = $this->get_access_token();
+        if (!$token) return false;
+
+        $query = "trashed = false";
+        if ($parent_id) {
+            $query .= " and '$parent_id' in parents";
+        }
+        if ($q) {
+            $query .= " and name contains '$q'";
+        }
+
+        $url = 'https://www.googleapis.com/drive/v3/files?' . http_build_query([
+            'q' => $query,
+            'fields' => 'files(id, name, mimeType, thumbnailLink)',
+            'pageSize' => 50,
+            'orderBy' => 'folder,name'
+        ]);
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $response = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($status === 200) {
+            $result = json_decode($response, true);
+            return $result['files'] ?? [];
+        }
+
+        return false;
+    }
+
+    /**
      * Converts a standard Google Drive share link to a direct download link.
      */
     public static function to_direct_link($url) {
