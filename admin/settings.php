@@ -133,6 +133,7 @@ $status = [
         <a href="#license"><span class="num">08</span> License</a>
         <a href="#email"><span class="num">09</span> Email</a>
         <a href="#payments"><span class="num">10</span> Payments</a>
+        <a href="#maintenance"><span class="num">11</span> Maintenance</a>
     </nav>
 
     <main class="settings-main">
@@ -331,6 +332,28 @@ $status = [
             <div class="field">
                 <label>Required Confirmations</label>
                 <input type="number" data-key="plisio_confirmations" value="<?php echo Core::escape($core->setting('plisio_confirmations', '2')); ?>">
+            </div>
+        </section>
+
+        <!-- 11 Maintenance -->
+        <section id="maintenance" class="section">
+            <h2><span class="num">11</span> Maintenance</h2>
+            <div style="background: var(--bg-2); padding: 24px; border-radius: 16px; border: 1px solid var(--line);">
+                <h4 style="margin: 0 0 12px; font-size: 14px; font-weight: 700;">Cron Job Setup</h4>
+                <p style="font-size: 12px; color: var(--ink-dim); line-height: 1.6; margin-bottom: 16px;">
+                    To ensure auctions end on time and cascade payments work automatically, you must set up a cron job on your server to run every minute.
+                </p>
+                
+                <div class="field">
+                    <label>Recommended Cron Command</label>
+                    <div style="position: relative;">
+                        <code style="display:block; background:var(--bg); padding:16px; border-radius:12px; color:var(--ink); border: 1px solid var(--line); font-family: 'JetBrains Mono'; font-size: 11px; white-space: pre-wrap;">* * * * * php <?php echo realpath(__DIR__ . '/../api/cron.php'); ?> > /dev/null 2>&1</code>
+                    </div>
+                </div>
+
+                <div style="background: color-mix(in oklab, var(--accent) 5%, var(--bg-2)); border: 1px solid var(--line); border-radius: 12px; padding: 16px; font-size: 11px; color: var(--ink-dim); line-height: 1.5;">
+                    <b style="color: var(--ink);">Note:</b> Depending on your hosting (cPanel, Plesk, etc.), you might need to use the full path to the PHP binary (e.g., <code>/usr/local/bin/php</code>). If you cannot set up a system cron, the system will still process auctions whenever the dashboard is visited.
+                </div>
             </div>
         </section>
     </main>
