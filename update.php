@@ -46,6 +46,9 @@ $queries = [
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 
+    "ALTER TABLE `beats` MODIFY `audio_path` VARCHAR(255) NULL;",
+    "ALTER TABLE `beats` MODIFY `sample_path` VARCHAR(255) NULL;",
+    "ALTER TABLE `beats` MODIFY `stems_path` VARCHAR(255) NULL;",
     "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `stems_path` VARCHAR(255) AFTER `sample_path`;",
     "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `audio_url` VARCHAR(500) AFTER `audio_path`;",
     "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `sample_url` VARCHAR(500) AFTER `sample_path`;",
