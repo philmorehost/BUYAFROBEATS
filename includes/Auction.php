@@ -102,6 +102,40 @@ class Auction {
             $stmt->execute([$beat_id, $handle, $amount, $msg]);
 
             $db->commit();
+
+            // 1. Notify Outbid User
+            if (!empty($beat['top_bidder'])) {
+                // Get previous top bidder's email
+                $stmt = $db->prepare("SELECT bidder_email FROM bids WHERE beat_id = ? AND bidder_handle = ? ORDER BY created_at DESC LIMIT 1");
+                $stmt->execute([$beat_id, $beat['top_bidder']]);
+                $prev_email = $stmt->fetchColumn();
+
+                if ($prev_email && $prev_email !== $email) {
+                    $should_notify = true;
+                    // Check if they are a registered user and opted out
+                    $stmt = $db->prepare("SELECT email_notifications FROM users WHERE email = ?");
+                    $stmt->execute([$prev_email]);
+                    $pref = $stmt->fetchColumn();
+                    if ($pref === 0 || $pref === '0') $should_notify = false;
+
+                    if ($should_notify) {
+                        require_once __DIR__ . '/Email.php';
+                        $email_svc = new \BAF\Email($this->core);
+                        $email_svc->notify_outbid($prev_email, $beat['title'], $amount);
+                    }
+                }
+            }
+
+            // 2. Notify Admin
+            require_once __DIR__ . '/Email.php';
+            $email_svc = new \BAF\Email($this->core);
+            $email_svc->notify_admin_activity('bid', [
+                'beat_title' => $beat['title'],
+                'amount' => '$' . number_format($amount, 2),
+                'bidder' => $handle . " ($email)",
+                'time' => date('Y-m-d H:i:s')
+            ]);
+
             return ['success' => true, 'ends_at' => $ends_at];
         } catch (\Exception $e) {
             $db->rollBack();
@@ -231,6 +265,14 @@ class Auction {
                 require_once __DIR__ . '/Email.php';
                 $email_svc = new \BAF\Email($this->core);
                 $email_svc->notify_win_payment($winner['email'], $beat['title'], $winner['amount'], $delivery_id);
+
+                // Notify Admin
+                $email_svc->notify_admin_activity('win', [
+                    'beat_title' => $beat['title'],
+                    'amount' => '$' . number_format($winner['amount'], 2),
+                    'winner' => $winner['handle'] . " (" . $winner['email'] . ")",
+                    'delivery_id' => $delivery_id
+                ]);
                 
             } catch (\Exception $e) {
                 $db->rollBack();

@@ -64,6 +64,18 @@ class Email {
         return $this->send($email, $subject, $this->wrap_template($msg));
     }
 
+    public function notify_admin_activity($type, $details) {
+        $admin_email = $this->core->setting('contact_email');
+        if (!$admin_email) return false;
+
+        $subject = "[Activity] " . ucfirst($type) . " on " . ($details['beat_title'] ?? 'Beat');
+        $msg = "<h1>New Activity</h1><p><b>Type:</b> " . ucfirst($type) . "</p>";
+        foreach ($details as $k => $v) {
+            $msg .= "<p><b>" . ucfirst(str_replace('_', ' ', $k)) . ":</b> $v</p>";
+        }
+        return $this->send($admin_email, $subject, $this->wrap_template($msg));
+    }
+
     public function send_payment_receipt($sale) {
         $subject = "Payment Receipt & Download: " . $sale['title'];
         $download_url = $this->get_site_url() . "/api/download.php?token=" . $sale['download_token'];

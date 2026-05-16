@@ -14,6 +14,13 @@ if (!isset($_SESSION['user_id'])) {
 $is_admin = $core->is_admin();
 $auction = new Auction($core);
 
+// One-time migration check for email_notifications column
+try {
+    $core->db()->query("SELECT email_notifications FROM users LIMIT 1");
+} catch (\Exception $e) {
+    $core->db()->exec("ALTER TABLE users ADD COLUMN email_notifications TINYINT(1) DEFAULT 1 AFTER role");
+}
+
 // Ensure auctions are processed when users visit the dashboard
 $auction->check_for_winners();
 $auction->cleanup_sold_beats();
@@ -189,6 +196,11 @@ if (isset($_GET['export']) && $is_admin) {
         ");
         $bids_stmt->execute([$user_email]);
         $my_bidding = $bids_stmt->fetchAll();
+
+        // Get User Preferences
+        $stmt_pref = $core->db()->prepare("SELECT email_notifications FROM users WHERE id = ?");
+        $stmt_pref->execute([$_SESSION['user_id']]);
+        $email_pref = $stmt_pref->fetchColumn();
     }
 
     if (empty($sales)): ?>
@@ -279,6 +291,50 @@ if (isset($_GET['export']) && $is_admin) {
                 </table>
             </div>
         <?php endif; ?>
+
+        <!-- Account Settings for Users -->
+        <div style="margin-top: 48px; padding: 24px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 18px;">
+            <h3 style="font-size:14px; margin:0 0 16px; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)">Account Settings</h3>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:20px;">
+                <div>
+                    <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Email Notifications</div>
+                    <div style="font-size:13px; color:var(--ink-dim);">Receive alerts when you are outbid or win an auction.</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <select id="email-pref-toggle" style="background:var(--bg); border:1px solid var(--line); color:var(--ink); padding:8px 12px; border-radius:8px; font-family:inherit; font-size:13px; cursor:pointer;">
+                        <option value="1" <?php echo $email_pref ? 'selected' : ''; ?>>Enabled</option>
+                        <option value="0" <?php echo !$email_pref ? 'selected' : ''; ?>>Disabled</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('email-pref-toggle').addEventListener('change', async function() {
+                const val = this.value;
+                const fd = new FormData();
+                fd.append('email_notifications', val);
+                fd.append('csrf_token', '<?php echo Core::csrf_token(); ?>');
+
+                try {
+                    const res = await fetch('api/update_profile.php', {
+                        method: 'POST',
+                        body: fd
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        // Success toast or subtle feedback
+                        this.style.borderColor = 'var(--ok)';
+                        setTimeout(() => this.style.borderColor = '', 1000);
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Failed to update settings.');
+                }
+            });
+        </script>
     <?php endif; ?>
 </div>
 
