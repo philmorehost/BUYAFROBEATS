@@ -7,7 +7,7 @@ use BAF\Storage;
 
 $core = Core::get_instance();
 if (!$core->is_admin()) {
-    header('Location: ../index.php');
+    header('Location: login');
     exit;
 }
 
@@ -19,83 +19,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!Core::verify_csrf($_POST['csrf_token'] ?? '')) {
             throw new \Exception("Security check failed.");
         }
-
+        
         $title = $_POST['title'] ?? '';
-        $starting = (float)($_POST['starting_bid'] ?? 0);
-        $reserve = (float)($_POST['reserve_price'] ?? 0);
-        $bpm = (int)($_POST['bpm'] ?? 0);
+        $starting = $_POST['starting_bid'] ?? 0;
+        $bpm = $_POST['bpm'] ?? 0;
         $key = $_POST['key_sig'] ?? '';
         $genre = $_POST['genre'] ?? '';
         $duration = $_POST['duration'] ?? '';
-        
-        $master_url = $_POST['master_url'] ?? '';
-        $stems_url = $_POST['stems_url'] ?? '';
-        $license_url = $_POST['license_url'] ?? '';
-        $preview_url = $_POST['preview_url'] ?? '';
+
+        if (empty($title) || $starting <= 0 || !isset($_FILES['audio'])) {
+            throw new \Exception("Please fill in all required fields and upload an audio file.");
+        }
 
         // Google Drive Integration
         require_once __DIR__ . '/../includes/GoogleDrive.php';
         $drive = new \BAF\GoogleDrive();
-        $root_parent = $core->setting('google_drive_parent_folder');
-        
+        $parent_folder = $core->setting('google_drive_parent_folder');
+
         // Create a specific folder for this auction
-        $parent_folder = $drive->create_folder(strtoupper($title), $root_parent);
-        if (!$parent_folder) $parent_folder = $root_parent; // Fallback to root if folder creation fails
+        $auction_folder_id = $drive->create_folder(strtoupper($title), $parent_folder);
+        if (!$auction_folder_id) {
+            throw new \Exception("Failed to create auction folder on Google Drive.");
+        }
 
         // Handle Master File
-        if (!empty($_FILES['master_file']['name'])) {
-            $fid = $drive->upload_file($_FILES['master_file']['tmp_name'], $_FILES['master_file']['name'], $_FILES['master_file']['type'], $parent_folder);
-            if ($fid) $master_url = "https://drive.google.com/open?id=" . $fid;
+        $filename = null;
+        $audio_url = null;
+        if (isset($_FILES['audio']) && $_FILES['audio']['error'] === UPLOAD_ERR_OK) {
+            $audio_url = $drive->upload($_FILES['audio']['tmp_name'], $title . " - MASTER.wav", $_FILES['audio']['type'], $auction_folder_id);
+            if (!$audio_url) throw new \Exception("Master file upload to Drive failed.");
+            $audio_url = \BAF\GoogleDrive::get_download_link($audio_url);
         }
 
-        // Handle Stems File
-        if (!empty($_FILES['stems_file']['name'])) {
-            $fid = $drive->upload_file($_FILES['stems_file']['tmp_name'], $_FILES['stems_file']['name'], $_FILES['stems_file']['type'], $parent_folder);
-            if ($fid) $stems_url = "https://drive.google.com/open?id=" . $fid;
+        // Handle Sample
+        $sample_url = null;
+        if (isset($_FILES['sample']) && $_FILES['sample']['error'] === UPLOAD_ERR_OK) {
+            $sample_url = $drive->upload($_FILES['sample']['tmp_name'], $title . " - PREVIEW.mp3", $_FILES['sample']['type'], $auction_folder_id);
+            if ($sample_url) $sample_url = \BAF\GoogleDrive::get_download_link($sample_url);
         }
 
-        // Handle License File
-        if (!empty($_FILES['license_file']['name'])) {
-            $fid = $drive->upload_file($_FILES['license_file']['tmp_name'], $_FILES['license_file']['name'], $_FILES['license_file']['type'], $parent_folder);
-            if ($fid) $license_url = "https://drive.google.com/open?id=" . $fid;
+        // Handle Stems
+        $stems_url = null;
+        if (isset($_FILES['stems']) && $_FILES['stems']['error'] === UPLOAD_ERR_OK) {
+            $stems_url = $drive->upload($_FILES['stems']['tmp_name'], $title . " - STEMS.zip", $_FILES['stems']['type'], $auction_folder_id);
+            if ($stems_url) $stems_url = \BAF\GoogleDrive::get_download_link($stems_url);
         }
 
-        if (empty($title) || $starting <= 0) {
-            throw new \Exception("Title and starting bid are required.");
-        }
+        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, audio_url, sample_url, stems_url, google_drive_folder_id, status)
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')");
+        $stmt->execute([strtoupper($title), $bpm, $key, $genre, $duration, $starting, $starting, $audio_url, $sample_url, $stems_url, $auction_folder_id]);
 
-        if (empty($preview_url) && empty($_FILES['preview_file']['name'])) {
-            throw new \Exception("A preview audio file or URL is required.");
-        }
-
-        // Handle local preview upload if provided
-        $preview_path = null;
-        if (!empty($_FILES['preview_file']['name'])) {
-            $storage = new Storage();
-            $preview_path = $storage->upload_audio($_FILES['preview_file']);
-        }
-
-        $stmt = $core->db()->prepare("INSERT INTO beats (title, bpm, key_sig, genre, duration, starting_bid, current_bid, reserve_price, audio_path, audio_url, master_url, stems_url, license_url, status, created_at)
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'live', UTC_TIMESTAMP())");
-        $stmt->execute([
-            strtoupper($title), $bpm, $key, $genre, $duration, 
-            $starting, $starting, $reserve,
-            $preview_path, $preview_url,
-            $master_url, $stems_url, $license_url
-        ]);
-
-        $success = "Beat \"$title\" is now live!";
-        
-        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
-            echo json_encode(['success' => true, 'message' => $success]);
-            exit;
-        }
+        $success = "Beat \"$title\" has been listed live with Google Drive integration!";
     } catch (\Exception $e) {
         $error = $e->getMessage();
-        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
-            echo json_encode(['success' => false, 'message' => $error]);
-            exit;
-        }
     }
 }
 
@@ -103,125 +79,106 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload — <?php echo Core::escape($core->setting('site_title', 'BEATZAZA')); ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=3.0">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Upload New Beat — <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?></title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
-<body class="admin-page">
-    <header class="topbar">
-        <div class="topbar-inner">
-            <a href="index.php" class="logo">
-                <?php echo $core->render_logo(); ?> <span style="opacity: 0.5; margin-left: 8px; font-weight: 400;">Upload</span>
-            </a>
-            <nav class="tabs">
-                <a href="index.php" class="tab">Overview</a>
-                <a href="upload.php" class="tab is-active">+ Upload Beat</a>
-                <a href="settings.php" class="tab">Settings</a>
-            </nav>
-            <div class="spacer"></div>
-            <a href="logout.php" class="tab mono" style="font-size: 11px;">Logout</a>
+<body>
+
+<div class="topbar">
+    <div class="topbar-inner">
+        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
+        <div class="tabs">
+            <a href="index" class="tab">Dashboard</a>
+            <a href="upload" class="tab is-active">+ Upload Beat</a>
+            <a href="settings" class="tab">Settings</a>
         </div>
-    </header>
+        <div class="spacer"></div>
+        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
+    </div>
+</div>
 
-    <main class="page">
-        <div class="panel" style="max-width: 800px;">
-            <div class="admin-banner"><span class="live-dot"></span> New Listing</div>
-            <h2>Create Auction</h2>
-            <p class="lead">Fill in the beat details. High-quality deliverables should be hosted on Google Drive.</p>
+<div class="page">
+    <div class="panel">
+        <div class="admin-banner"><span style="width:6,height:6,borderRadius:'50%',background:'var(--accent)',display:'inline-block'"></span> Admin · Listing a new drop</div>
+        <h2>List a new beat</h2>
+        <p class="lead">It goes live immediately. The 30-minute countdown starts on the first bid.</p>
 
-            <?php if ($error): ?><div style="color:var(--danger); margin-bottom:20px;"><?php echo $error; ?></div><?php endif; ?>
-            <?php if ($success): ?><div style="color:var(--ok); margin-bottom:20px;"><?php echo $success; ?></div><?php endif; ?>
+        <?php if ($error): ?><div style="color:var(--danger); margin-bottom:20px;"><?php echo $error; ?></div><?php endif; ?>
+        <?php if ($success): ?><div style="color:var(--ok); margin-bottom:20px;"><?php echo $success; ?></div><?php endif; ?>
 
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="<?php echo Core::csrf_token(); ?>">
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="<?php echo Core::csrf_token(); ?>">
 
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
                 <div class="field">
-                    <label>Beat Title</label>
-                    <input type="text" name="title" placeholder="e.g. BURNER BOY TYPE" required>
-                </div>
-
-                <div class="row3">
-                    <div class="field"><label>Starting Bid ($)</label><input type="number" name="starting_bid" value="99"></div>
-                    <div class="field"><label>Reserve Price ($)</label><input type="number" name="reserve_price" value="0"></div>
-                    <div class="field"><label>BPM</label><input type="number" name="bpm" value="100"></div>
-                </div>
-
-                <div class="row3">
-                    <div class="field">
-                        <label>Key</label>
-                        <input type="text" name="key_sig" placeholder="F# min">
-                    </div>
-                    <div class="field">
-                        <label>Genre</label>
-                        <select name="genre">
-                            <option>Afrobeats</option>
-                            <option>Amapiano</option>
-                            <option>Afro-Swing</option>
-                            <option>Afro-Fusion</option>
-                        </select>
-                    </div>
-                    <div class="field"><label>Duration</label><input type="text" name="duration" placeholder="2:45"></div>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid var(--line); margin: 32px 0;">
-                <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Deliverables (Google Drive)</h3>
-
-                <div class="field">
-                    <label>Master WAV</label>
-                    <input type="file" name="master_file" accept=".wav,.mp3">
-                    <p class="help-text">OR enter a Drive/Public URL below</p>
-                    <input type="url" name="master_url" placeholder="https://drive.google.com/file/d/...">
+                    <label>Main Audio File (HQ)</label>
+                    <input type="file" name="audio" accept="audio/*" required>
                 </div>
                 <div class="field">
-                    <label>Stems ZIP</label>
-                    <input type="file" name="stems_file" accept=".zip,.rar">
-                    <p class="help-text">OR enter a Drive/Public URL below</p>
-                    <input type="url" name="stems_url" placeholder="https://drive.google.com/file/d/...">
+                    <label>Sample Audio (optional)</label>
+                    <input type="file" name="sample" accept="audio/*">
                 </div>
                 <div class="field">
-                    <label>License PDF</label>
-                    <input type="file" name="license_file" accept=".pdf">
-                    <p class="help-text">OR enter a Drive/Public URL below</p>
-                    <input type="url" name="license_url" placeholder="https://drive.google.com/file/d/...">
+                    <label>Stems (ZIP, optional)</label>
+                    <input type="file" name="stems" accept=".zip">
                 </div>
+            </div>
+            
+            <div class="field">
+                <label>Beat Title</label>
+                <input type="text" name="title" placeholder="LAGOS RAIN" required>
+            </div>
 
-                <hr style="border: 0; border-top: 1px solid var(--line); margin: 32px 0;">
-                <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase;">Public Preview</h3>
-
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+                <div class="field"><label>Starting Bid ($)</label><input type="number" name="starting_bid" value="99" required></div>
+                <div class="field"><label>BPM</label><input type="number" name="bpm" value="100"></div>
                 <div class="field">
-                    <label>Preview Audio (MP3)</label>
-                    <input type="file" name="preview_file" accept="audio/*">
-                    <p style="font-size: 11px; color: var(--ink-mute); margin-top: 4px;">OR enter a public URL below</p>
+                    <label>Key</label>
+                    <select name="key_sig">
+                        <option>C min</option><option>D min</option><option>F# min</option><option>A min</option><option>G maj</option><option>E maj</option>
+                    </select>
                 </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 <div class="field">
-                    <label>Preview URL</label>
-                    <input type="url" name="preview_url" placeholder="https://...">
+                    <label>Genre</label>
+                    <select name="genre">
+                        <option>Afrobeats</option><option>Amapiano</option><option>Afro-Swing</option><option>Afro-House</option><option>Afro-Fusion</option><option>Afro-Pop</option>
+                    </select>
                 </div>
+                <div class="field"><label>Duration</label><input type="text" name="duration" placeholder="2:48"></div>
+            </div>
 
-                <div class="actions" style="margin-top: 40px;">
-                    <a href="index.php" class="btn btn-ghost">Cancel</a>
-                    <button type="submit" class="btn btn-primary" style="padding: 12px 32px;">Go Live →</button>
-                </div>
-            </form>
-        </div>
-    </main>
+            <div class="actions" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
+                <a href="index" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Put it live →</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    <script>
-        // Duration detection
-        document.querySelector('input[name="preview_file"]').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const audio = new Audio();
-                audio.src = URL.createObjectURL(file);
-                audio.onloadedmetadata = () => {
-                    const m = Math.floor(audio.duration / 60);
-                    const s = Math.floor(audio.duration % 60);
-                    document.querySelector('input[name="duration"]').value = `${m}:${s.toString().padStart(2, '0')}`;
-                };
-            }
-        });
-    </script>
+<script>
+    // Audio Duration Auto-detection (F1.3)
+    document.querySelector('input[name="audio"]').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const audio = new Audio();
+            audio.src = URL.createObjectURL(file);
+            audio.addEventListener('loadedmetadata', function() {
+                const duration = Math.floor(audio.duration);
+                const mins = Math.floor(duration / 60);
+                const secs = duration % 60;
+                const formatted = `${mins}:${secs.toString().padStart(2, '0')}`;
+                document.querySelector('input[name="duration"]').value = formatted;
+                URL.revokeObjectURL(audio.src);
+            });
+        }
+    });
+</script>
+
 </body>
 </html>

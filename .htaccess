@@ -1,28 +1,24 @@
-Options -Indexes
-# Hide .php extension
+Options -MultiViews
 RewriteEngine On
+
+# Redirect /index.php to /
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
+RewriteRule ^index\.php$ / [R=301,L]
+
+# Redirect /page.php to /page
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
+RewriteRule ^(.+)\.php$ /$1 [R=301,L]
+
+# Internally rewrite /page to /page.php
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^([^\.]+)$ $1.php [NC,L]
+RewriteRule ^(.*)$ $1.php [L]
 
-# Prevent sensitive files
-<FilesMatch "(\.sql|\.bak|\.bak|\.log|config\.php|composer\..*|package.*\.json)$">
-    Order deny,allow
-    Deny from all
-</FilesMatch>
-
-# Prevent script execution in uploads (moved to uploads/.htaccess)
-# handled by uploads/.htaccess logic
-
-# Gzip compression for performance
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/x-javascript application/json
-</IfModule>
-
-# Browser Caching
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresDefault "access plus 1 month"
-    ExpiresByType text/html "access plus 0 seconds"
-    ExpiresByType application/json "access plus 0 seconds"
+# Security
+Options -Indexes
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>

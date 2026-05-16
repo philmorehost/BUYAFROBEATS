@@ -32,9 +32,7 @@ class Core {
             header("X-Content-Type-Options: nosniff");
             header("X-XSS-Protection: 1; mode=block");
             header("Referrer-Policy: strict-origin-when-cross-origin");
-            
-            // Expanded CSP for Google Drive, Plisio, and Google Auth
-            header("Content-Security-Policy: default-src 'self' https:; script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://accounts.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://accounts.google.com https://www.youtube.com; connect-src 'self' https://accounts.google.com https://www.google-analytics.com https://stats.g.doubleclick.net;");
+            header("Content-Security-Policy: default-src 'self' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://accounts.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://accounts.google.com https://www.youtube.com; connect-src 'self' https:;");
         }
     }
 
@@ -64,13 +62,9 @@ class Core {
 
     private function load_settings() {
         if (!$this->db) return;
-        try {
-            $stmt = $this->db->query("SELECT `key`, `value` FROM settings");
-            while ($row = $stmt->fetch()) {
-                $this->settings[$row['key']] = $row['value'];
-            }
-        } catch (\Exception $e) {
-            // Table might not exist yet during install
+        $stmt = $this->db->query("SELECT `key`, `value` FROM settings");
+        while ($row = $stmt->fetch()) {
+            $this->settings[$row['key']] = $row['value'];
         }
     }
 
@@ -101,16 +95,9 @@ class Core {
         return $this->settings[$key] ?? $default;
     }
 
-    public function update_setting($key, $value) {
-        if (!$this->db) return false;
-        $this->settings[$key] = $value;
-        $stmt = $this->db->prepare("INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?");
-        return $stmt->execute([$key, $value, $value]);
-    }
-
     // Security Helpers
     public static function escape($str) {
-        return htmlspecialchars((string)($str ?? ''), ENT_QUOTES, 'UTF-8');
+        return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
     }
 
     public static function csrf_token() {
@@ -129,55 +116,55 @@ class Core {
     }
 
     public function render_favicon() {
-        $title = trim($this->setting('site_title', 'BEATZAZA'));
+        $title = trim($this->setting('site_title', 'BUYAFROBEATS'));
         $first_letter = strtoupper($title[0] ?? 'B');
-        // OKLCH Accent color: oklch(0.80 0.17 65) -> roughly #ff9f00
-        $svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='28' fill='#ff9f00'/><text x='50%' y='52%' dominant-baseline='central' text-anchor='middle' font-family='Space Grotesk, sans-serif' font-weight='700' font-size='60' fill='#1a1815'>{$first_letter}</text></svg>";
+        $svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='#ffa326'/><text x='50%' y='54%' dominant-baseline='central' text-anchor='middle' font-family='Space Grotesk, sans-serif' font-weight='700' font-size='60' fill='#1a1815'>{$first_letter}</text></svg>";
         return "data:image/svg+xml," . rawurlencode($svg);
     }
 
     public function render_logo() {
-        $title = trim($this->setting('site_title', 'BEATZAZA'));
+        $title = trim($this->setting('site_title', 'Beat Zaza'));
         
-        // Find where to split (BEAT | ZAZA)
+        // Find where to split the color
         $split_at = -1;
-        if (strtoupper($title) === 'BEATZAZA') {
-            $split_at = 4;
+        $space_index = strpos($title, ' ');
+
+        if ($space_index !== false) {
+            $split_at = $space_index;
         } else {
-            $space_index = strpos($title, ' ');
-            if ($space_index !== false) {
-                $split_at = $space_index;
-            } else {
-                // Find second capital letter
-                $caps_found = 0;
-                for ($i = 0; $i < strlen($title); $i++) {
-                    if (ctype_upper($title[$i])) {
-                        $caps_found++;
-                        if ($caps_found === 2) {
-                            $split_at = $i;
-                            break;
-                        }
+            // Find second capital letter (CamelCase)
+            $caps_found = 0;
+            for ($i = 0; $i < strlen($title); $i++) {
+                if (ctype_upper($title[$i])) {
+                    $caps_found++;
+                    if ($caps_found === 2) {
+                        $split_at = $i;
+                        break;
                     }
                 }
+            }
+
+            // Fallback for names like BUYBEATS
+            if ($split_at === -1 && strpos(strtoupper($title), 'BUY') === 0 && strlen($title) > 3) {
+                $split_at = 3;
             }
         }
 
         if ($split_at > 0 && $split_at < strlen($title)) {
             $part1 = substr($title, 0, $split_at);
             $part2 = substr($title, $split_at);
-            return '<span class="lg-beat">' . self::escape($part1) . '</span><span class="lg-zaza">' . self::escape($part2) . '</span><span class="lg-tld">.COM</span><span class="dot"></span>';
+            return '<span>' . self::escape($part1) . '<span style="color:var(--accent)">' . self::escape($part2) . '</span></span>';
         }
         
-        return '<span class="lg-zaza">' . self::escape($title) . '</span><span class="lg-tld">.COM</span><span class="dot"></span>';
+        return '<span>' . self::escape($title) . '</span>';
     }
 
     public function render_seo($page_seo = []) {
-        $site_title = $this->setting('site_title', 'BEATZAZA');
-        $site_title_clean = str_replace([' ', '.com', '.COM'], '', $site_title);
-        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $site_title_clean . ".COM — exclusive beat auctions");
-        $desc = !empty($page_seo['description']) ? $page_seo['description'] : $this->setting('global_meta_description', 'One-of-one Afrobeats instrumentals. Bid, win, own the master. Every beat sold once, then gone.');
-        $keywords = !empty($page_seo['keywords']) ? $page_seo['keywords'] : $this->setting('global_meta_keywords', 'afrobeats, beat auction, exclusive beats, instrumental, OBV');
-        $og_image = $this->setting('global_og_image', $this->get_site_url() . "/assets/img/share-card.png");
+        $site_title = $this->setting('site_title', 'BUYAFROBEATS');
+        $site_title = str_replace(' ', '', $site_title);
+        $title = !empty($page_seo['title']) ? $page_seo['title'] : $this->setting('global_meta_title', $site_title . " — Exclusive Beat Auctions");
+        $desc = !empty($page_seo['description']) ? $page_seo['description'] : $this->setting('global_meta_description', 'A one-of-one Afrobeats auction house. Upload, bid, win, and the beat vanishes.');
+        $keywords = !empty($page_seo['keywords']) ? $page_seo['keywords'] : $this->setting('global_meta_keywords', 'beats, auction, afrobeats, exclusive');
 
         $html = "<title>" . self::escape($title) . "</title>\n";
         $html .= "    <meta name=\"description\" content=\"" . self::escape($desc) . "\">\n";
@@ -188,21 +175,14 @@ class Core {
         $html .= "    <meta property=\"og:description\" content=\"" . self::escape($desc) . "\">\n";
         $html .= "    <meta property=\"og:type\" content=\"website\">\n";
         $html .= "    <meta property=\"og:url\" content=\"" . (isset($_SERVER['HTTPS']) ? 'https' : 'http') . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]\">\n";
-        $html .= "    <meta property=\"og:image\" content=\"" . self::escape($og_image) . "\">\n";
+        $html .= "    <meta property=\"og:image\" content=\"" . $this->get_site_url() . "/assets/img/share-card.png\">\n";
 
         // Twitter
         $html .= "    <meta name=\"twitter:card\" content=\"summary_large_image\">\n";
         $html .= "    <meta name=\"twitter:title\" content=\"" . self::escape($title) . "\">\n";
         $html .= "    <meta name=\"twitter:description\" content=\"" . self::escape($desc) . "\">\n";
-        $html .= "    <meta name=\"twitter:image\" content=\"" . self::escape($og_image) . "\">\n";
+        $html .= "    <meta name=\"twitter:image\" content=\"" . $this->get_site_url() . "/assets/img/share-card.png\">\n";
         
-        // Analytics (GA4)
-        $ga4_id = $this->setting('google_analytics_id');
-        if ($ga4_id) {
-            $html .= "    <script async src=\"https://www.googletagmanager.com/gtag/js?id=" . self::escape($ga4_id) . "\"></script>\n";
-            $html .= "    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','" . self::escape($ga4_id) . "');</script>\n";
-        }
-
         // AdSense
         $adsense_id = $this->setting('google_adsense_client');
         if ($adsense_id) {
@@ -224,13 +204,5 @@ class Core {
 
     public function render_footer_injection() {
         return $this->setting('footer_injection', '');
-    }
-
-    public function get_google_auth_config() {
-        return [
-            'client_id' => $this->setting('google_oauth_client_id'),
-            'client_secret' => $this->setting('google_oauth_client_secret'),
-            'redirect_uri' => $this->get_site_url() . '/api/auth/google'
-        ];
     }
 }

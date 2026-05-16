@@ -44,7 +44,31 @@ $queries = [
         `answer` TEXT NOT NULL,
         `sort_order` INT DEFAULT 0,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+    "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `stems_path` VARCHAR(255) AFTER `sample_path`;",
+    "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `audio_url` VARCHAR(500) AFTER `audio_path`;",
+    "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `sample_url` VARCHAR(500) AFTER `sample_path`;",
+    "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `stems_url` VARCHAR(500) AFTER `stems_path`;",
+    "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `license_url` VARCHAR(500) AFTER `stems_url`;",
+    "ALTER TABLE `beats` ADD COLUMN IF NOT EXISTS `google_drive_folder_id` VARCHAR(100) AFTER `license_url`;",
+    
+    // Indexes for performance
+    "ALTER TABLE `beats` ADD INDEX IF NOT EXISTS `idx_status_genre` (`status`, `genre`);",
+    "ALTER TABLE `beats` ADD INDEX IF NOT EXISTS `idx_ends_at` (`ends_at`);",
+    
+    // Sales and Activity
+    "CREATE TABLE IF NOT EXISTS `activity` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `beat_id` INT,
+        `user_handle` VARCHAR(100),
+        `type` ENUM('bid', 'sold', 'joined') NOT NULL,
+        `message` TEXT,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `plisio_invoice_id` VARCHAR(100) AFTER `payment_status`;",
+    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `plisio_invoice_url` VARCHAR(500) AFTER `plisio_invoice_id`;"
 ];
 
 echo "<h2>Database Update Tool</h2>";
@@ -55,51 +79,25 @@ foreach ($queries as $sql) {
         $db->exec($sql);
         echo "<li style='color:green;'>Success: Table structure updated.</li>";
     } catch (\PDOException $e) {
-        echo "<li style='color:red;'>Error executing query: " . $e->getMessage() . "</li>";
+        echo "<li style='color:red;'>Error: " . $e->getMessage() . "</li>";
     }
 }
 
-// Special check for stems_path as ALTER TABLE IF NOT EXISTS is not supported in older MySQL
-try {
-    $check = $db->query("SHOW COLUMNS FROM `beats` LIKE 'stems_path'");
-    if (!$check->fetch()) {
-        $db->exec("ALTER TABLE `beats` ADD COLUMN `stems_path` VARCHAR(255) AFTER `sample_path`;");
-        echo "<li style='color:green;'>Success: stems_path column added to beats table.</li>";
-    } else {
-        echo "<li style='color:blue;'>Info: stems_path column already exists.</li>";
-    }
-} catch (\PDOException $e) {
-    echo "<li style='color:red;'>Error updating beats table: " . $e->getMessage() . "</li>";
-}
+// Default Settings
+$default_settings = [
+    'google_drive_client_id' => '',
+    'google_drive_client_secret' => '',
+    'google_drive_refresh_token' => '',
+    'google_drive_parent_folder' => '',
+    'plisio_api_key' => '',
+    'plisio_white_label_key' => '',
+    'admin_email' => 'admin@beatzaza.com'
+];
 
-// Add URL columns for external file support
-try {
-    $check = $db->query("SHOW COLUMNS FROM `beats` LIKE 'audio_url'");
-    if (!$check->fetch()) {
-        $db->exec("ALTER TABLE `beats` 
-            ADD COLUMN `audio_url` VARCHAR(500) AFTER `audio_path`, 
-            ADD COLUMN `sample_url` VARCHAR(500) AFTER `sample_path`, 
-            ADD COLUMN `stems_url` VARCHAR(500) AFTER `stems_path`,
-            MODIFY COLUMN `audio_path` VARCHAR(255) NULL,
-            MODIFY COLUMN `sample_path` VARCHAR(255) NULL,
-            MODIFY COLUMN `stems_path` VARCHAR(255) NULL;");
-        echo "<li style='color:green;'>Success: URL columns added and paths made nullable.</li>";
-    } else {
-        echo "<li style='color:blue;'>Info: URL columns already exist.</li>";
-    }
-} catch (\PDOException $e) {
-    echo "<li style='color:red;'>Error adding URL columns: " . $e->getMessage() . "</li>";
+foreach ($default_settings as $key => $val) {
+    $stmt = $db->prepare("INSERT IGNORE INTO settings (`key`, `value`) VALUES (?, ?)");
+    $stmt->execute([$key, $val]);
 }
-
-// Add indexes for performance
-try {
-    $db->exec("ALTER TABLE `beats` ADD INDEX `idx_status` (`status`), ADD INDEX `idx_ends_at` (`ends_at`);");
-    echo "<li style='color:green;'>Success: Performance indexes added to beats table.</li>";
-} catch (\PDOException $e) {
-    // Indexes might already exist
-    echo "<li style='color:blue;'>Info: Performance indexes already exist or could not be added.</li>";
-}
-
 
 echo "</ul>";
 echo "<p><b>Update complete!</b> you can now use the CMS, FAQs, and Newsletter features.</p>";

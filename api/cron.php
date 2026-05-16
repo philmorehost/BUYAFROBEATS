@@ -1,39 +1,31 @@
 <?php
+// Maintenance script to be run via server cron every minute
+// Example: * * * * * php /path/to/api/cron.php > /dev/null 2>&1
+
 require_once __DIR__ . '/../includes/Core.php';
 require_once __DIR__ . '/../includes/Auction.php';
 
 use BAF\Core;
 use BAF\Auction;
 
+// Ensure this is not running too frequently if called via web
+// (Though it's designed for CLI)
+if (php_sapi_name() !== 'cli') {
+    // Basic security for web-based trigger
+    $token = $_GET['token'] ?? '';
+    if ($token !== AUTH_SALT) {
+        header("HTTP/1.1 403 Forbidden");
+        exit("Invalid token");
+    }
+}
+
 $core = Core::get_instance();
 $auction = new Auction($core);
 
-// Set high timeout for maintenance
-set_time_limit(300);
-ignore_user_abort(true);
+// 1. Process Finished Auctions (Winner Detection)
+$auction->check_for_winners();
 
-$last_check = (int)$core->setting('last_auction_check', 0);
+// 2. Cleanup & Reversals (24h Window)
+$auction->cleanup_sold_beats();
 
-// Run maintenance every 60 seconds
-if (time() - $last_check >= 60) {
-    $core->update_setting('last_auction_check', time());
-    
-    // 1. Process finished auctions (Assign winners)
-    $auction->check_for_winners();
-    
-    // 2. Check for expired payment windows (Trigger Cascade)
-    $stmt = $core->db()->query("SELECT delivery_id FROM sales WHERE payment_status = 'pending' AND expires_at < UTC_TIMESTAMP()");
-    $expired_sales = $stmt->fetchAll();
-    foreach ($expired_sales as $sale) {
-        $auction->advance_cascade($sale['delivery_id']);
-    }
-    
-    // 3. Clear activity older than 30 days
-    $core->db()->query("DELETE FROM activity WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)");
-    
-    header('Content-Type: application/json');
-    echo json_encode(['success' => true, 'message' => 'BEATZAZA maintenance completed.']);
-} else {
-    header('Content-Type: application/json');
-    echo json_encode(['success' => true, 'message' => 'Skipped: Too soon.']);
-}
+echo "Cron maintenance completed at " . date('Y-m-d H:i:s') . " UTC\n";

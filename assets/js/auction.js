@@ -1,197 +1,249 @@
-/**
- * BEATZAZA v3.0 — Auction Controller
- */
+document.addEventListener('DOMContentLoaded', () => {
+    const bidModal = document.getElementById('bid-modal');
+    const bidForm = document.getElementById('bid-form');
+    const toastContainer = document.getElementById('toast-container');
+    const activityList = document.getElementById('activity-list');
 
-const state = {
-    playingId: null,
-    audio: new Audio(),
-    currentBidBeat: null,
-    csrfToken: document.querySelector('input[name="csrf_token"]')?.value || '',
-};
-
-// Initialize Timers
-function updateTimers() {
-    document.querySelectorAll('.timer').forEach(el => {
-        const endsAt = parseInt(el.dataset.ends);
-        if (!endsAt) {
-            el.innerText = '—';
-            return;
-        }
-
-        const now = Math.floor(Date.now() / 1000);
-        const diff = endsAt - now;
-
-        if (diff <= 0) {
-            el.innerText = '00:00';
-            el.classList.add('danger');
-            return;
-        }
-
-        const m = Math.floor(diff / 60);
-        const s = diff % 60;
-        el.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        
-        if (diff < 300) {
-            el.classList.add('danger');
-        } else {
-            el.classList.remove('danger');
-        }
-    });
-}
-setInterval(updateTimers, 1000);
-updateTimers();
-
-// Audio Handling
-function togglePlay(id, url) {
-    if (state.playingId === id) {
-        state.audio.pause();
-        state.playingId = null;
-        updatePlayIcons();
-        return;
-    }
-
-    state.playingId = id;
-    state.audio.src = url;
-    state.audio.play().catch(e => console.error('Playback failed', e));
-    updatePlayIcons();
-}
-
-function updatePlayIcons() {
-    document.querySelectorAll('.play svg').forEach(svg => {
-        svg.innerHTML = '<path d="M8 5v14l11-7z"/>'; // Play icon
-    });
-    
-    if (state.playingId) {
-        const card = document.querySelector(`.card[data-id="${state.playingId}"]`);
-        if (card) {
-            const svg = card.querySelector('.play svg');
-            svg.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // Pause icon
-        }
-    }
-}
-
-// Bidding
-function openBidModal(beat) {
-    state.currentBidBeat = beat;
-    document.getElementById('bid-beat-id').value = beat.id;
-    document.getElementById('bid-beat-title').innerText = beat.title;
-    document.getElementById('bid-beat-meta').innerText = `${beat.genre} · ${beat.bpm} BPM`;
-    
-    const minBid = beat.top_bidder ? Number(beat.current_bid) + 5 : Number(beat.starting_bid);
-    document.getElementById('bid-amount-input').value = minBid;
-    document.getElementById('bid-amount-input').min = minBid;
-    document.getElementById('bid-display-amount').innerText = '$' + minBid.toLocaleString();
-    
-    document.getElementById('bid-modal').style.display = 'flex';
-}
-
-function closeBidModal() {
-    document.getElementById('bid-modal').style.display = 'none';
-}
-
-function adjustBid(inc) {
-    const input = document.getElementById('bid-amount-input');
-    input.value = Number(input.value) + inc;
-    input.dispatchEvent(new Event('input'));
-}
-
-document.getElementById('bid-form')?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('bid-submit-btn');
-    btn.disabled = true;
-    btn.innerText = 'Submitting...';
-
-    const formData = new FormData(this);
-    
-    fetch('api/bid.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            showToast('Bid placed successfully!');
-            closeBidModal();
-            // Optional: Fetch latest data or wait for SSE
-        } else {
-            if (data.error === 'AUTH_REQUIRED') {
-                showToast('Please sign in to bid.', 'error');
-                // Could trigger Google Sign-in prompt here
-            } else {
-                showToast(data.error || 'Failed to place bid.', 'error');
-            }
-        }
-    })
-    .catch(err => {
-        showToast('Network error. Try again.', 'error');
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.innerText = 'Confirm Bid';
-    });
-});
-
-// SSE for Live Updates
-function initUpdates() {
-    const evtSource = new EventSource('api/updates.php');
-    evtSource.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        if (data.type === 'bid') {
-            updateCard(data.beat_id, data.amount, data.top_bidder, data.ends_at);
-            pushActivity(data.handle, data.amount, data.beat_title);
-        } else if (data.type === 'won') {
-            removeCard(data.beat_id);
-            showToast(`${data.handle} won ${data.beat_title}!`, 'hot');
-        }
+    // SVG Generation Helpers
+    const hash = (s) => { 
+        let h = 2166136261; 
+        for (let i=0; i<s.length; i++){ h ^= s.charCodeAt(i); h = (h*16777619) >>> 0; } 
+        return h; 
     };
-}
-// initUpdates(); // Uncomment when api/updates.php is ready
 
-function updateCard(id, amount, bidder, endsAt) {
-    const card = document.querySelector(`.card[data-id="${id}"]`);
-    if (card) {
-        card.querySelector('.auction-stat:first-child .value').innerText = '$' + Number(amount).toLocaleString();
-        const timer = card.querySelector('.timer');
-        timer.dataset.ends = Math.floor(new Date(endsAt).getTime() / 1000);
+    const generateCover = (id, title, genre) => {
+        const h = hash(id + title);
+        const hue1 = h % 360; 
+        const hue2 = (h * 7) % 360; 
+        const angle = (h % 180) - 90;
+        const sc = 4 + (h % 4);
         
-        card.classList.add('is-bumped');
-        setTimeout(() => card.classList.remove('is-bumped'), 800);
+        let stripesHtml = '';
+        for(let i=0; i<sc; i++) {
+            const off = (i/sc)*100;
+            const w = (100/sc) * 0.45;
+            stripesHtml += `<rect x="${off}" y="0" width="${w}" height="100" fill="oklch(0.40 0.10 ${hue1 + i*20})" opacity="0.35" />`;
+        }
+
+        return `
+            <svg class="stripes" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="g-${id}" gradientTransform="rotate(${angle})">
+                        <stop offset="0%" stop-color="oklch(0.30 0.08 ${hue1})" />
+                        <stop offset="100%" stop-color="oklch(0.22 0.06 ${hue2})" />
+                    </linearGradient>
+                </defs>
+                <rect width="100" height="100" fill="url(#g-${id})" />
+                ${stripesHtml}
+                <text x="8" y="94" fill="oklch(0.95 0.01 85)" opacity="0.9" font-size="7" font-family="JetBrains Mono, monospace" letter-spacing="0.5">${genre.toUpperCase()}</text>
+            </svg>
+        `;
+    };
+
+    const generateWaveform = (seed) => {
+        const h = hash(seed);
+        let barsHtml = '';
+        for(let i=0; i<32; i++) {
+            const v = Math.sin((h + i*13)*0.013)*0.5 + 0.5;
+            const height = (0.2 + v*0.8) * 28 + 4;
+            barsHtml += `<div class="bar" style="height: ${height}px"></div>`;
+        }
+        return barsHtml;
+    };
+
+    let currentAudio = null;
+    let audioTimer = null;
+
+    const stopAudio = () => {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
+        if (audioTimer) {
+            clearTimeout(audioTimer);
+            audioTimer = null;
+        }
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('is-playing'));
+        document.querySelectorAll('.play svg').forEach(s => s.innerHTML = '<path d="M8 5v14l11-7z"/>');
+    };
+
+    // Initialize existing cards
+    document.querySelectorAll('.card').forEach(card => {
+        const id = card.getAttribute('data-id');
+        const title = card.querySelector('.title').innerText;
+        const genre = card.querySelector('.producer').innerText.split(' · ').pop();
+        
+        const coverContainer = card.querySelector('.cover');
+        const existingSvg = coverContainer.querySelector('.stripes');
+        if (existingSvg) existingSvg.outerHTML = generateCover(id, title, genre);
+        
+        const waveContainer = card.querySelector('.wave');
+        waveContainer.innerHTML = generateWaveform(id);
+
+        // Player Logic
+        const playBtn = card.querySelector('.play');
+        const sampleUrl = playBtn.getAttribute('data-sample');
+
+        playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            if (card.classList.contains('is-playing')) {
+                stopAudio();
+                return;
+            }
+
+            if (!sampleUrl) {
+                showToast('No sample available for this beat.', 'error');
+                return;
+            }
+
+            stopAudio();
+
+            currentAudio = new Audio(sampleUrl);
+            currentAudio.play();
+            card.classList.add('is-playing');
+            playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+
+            // Limit to 20 seconds
+            audioTimer = setTimeout(() => {
+                stopAudio();
+                showToast('Sample preview ended (20s limit).', 'ok');
+            }, 20000);
+
+            currentAudio.onended = stopAudio;
+        });
+    });
+
+    // Timer Logic
+    const updateTimers = () => {
+        document.querySelectorAll('.timer').forEach(el => {
+            let ends = el.getAttribute('data-ends');
+            if (!ends) return;
+
+            // Handle Unix Timestamp (seconds) or Date String
+            let endsTs = isNaN(ends) ? new Date(ends).getTime() : parseInt(ends) * 1000;
+            const diff = Math.max(0, Math.floor((endsTs - Date.now()) / 1000));
+            
+            if (diff <= 0) {
+                el.innerText = "Ending...";
+                el.classList.add('danger');
+                return;
+            }
+
+            const m = Math.floor(diff / 60);
+            const s = diff % 60;
+            el.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            
+            if (diff < 300) el.classList.add('danger');
+            else el.classList.remove('danger');
+        });
+    };
+    setInterval(updateTimers, 1000);
+    updateTimers();
+
+    // Modal Logic
+    document.querySelectorAll('.open-bid').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const beat = JSON.parse(btn.getAttribute('data-beat'));
+            document.getElementById('modal-beat-id').value = beat.id;
+            document.getElementById('modal-amount').min = (parseFloat(beat.current_bid) || parseFloat(beat.starting_bid)) + (beat.top_bidder ? 5 : 0);
+            document.getElementById('modal-amount').value = document.getElementById('modal-amount').min;
+            
+            document.getElementById('modal-beat-info').innerHTML = `
+                <div style="font-weight:600">${beat.title}</div>
+                <div style="flex:1"></div>
+                <div style="text-align:right">
+                    <div style="font-size:10px; color:var(--ink-mute)">CURRENT BID</div>
+                    <div style="font-weight:700; color:var(--accent)">$${beat.current_bid}</div>
+                </div>
+            `;
+            bidModal.classList.add('is-visible');
+        });
+    });
+
+    document.getElementById('close-modal').addEventListener('click', () => {
+        bidModal.classList.remove('is-visible');
+    });
+
+    // Bid Submission
+    bidForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(bidForm);
+        
+        try {
+            const res = await fetch('api/bid', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                showToast(`Bid placed successfully!`, 'ok');
+                bidModal.classList.remove('is-visible');
+                // Refresh will be handled by SSE or manual if stream fails
+            } else {
+                showToast(data.error || 'Failed to place bid', 'error');
+            }
+        } catch (err) {
+            showToast('Network error', 'error');
+        }
+    });
+
+    // SSE Integration
+    const evtSource = new EventSource('api/stream');
+    
+    evtSource.addEventListener('activity', (e) => {
+        const act = JSON.parse(e.data);
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.style.animation = 'toastIn 0.3s ease';
+        item.innerHTML = `<span class="dot"></span><span><b>${act.user_handle}</b> ${act.message}</span>`;
+        activityList.prepend(item);
+        if (activityList.children.length > 8) activityList.lastChild.remove();
+        
+        if (act.type === 'bid') {
+            showToast(`${act.user_handle} bid $${act.amount} on a beat!`, 'ok');
+        }
+    });
+
+    evtSource.addEventListener('update', (e) => {
+        const beats = JSON.parse(e.data);
+        beats.forEach(b => {
+            const card = document.querySelector(`.card[data-id="${b.id}"]`);
+            if (card) {
+                const timerEl = card.querySelector('.timer');
+                const prevEnds = timerEl.getAttribute('data-ends');
+                
+                // Clock Extension Detection
+                if (prevEnds && b.ends_at && new Date(b.ends_at) > new Date(prevEnds)) {
+                    showToast(`Clock extended on "${card.querySelector('.title').innerText}"!`, 'ok');
+                    card.classList.add('is-extended');
+                    setTimeout(() => card.classList.remove('is-extended'), 2000);
+                }
+
+                card.querySelector('.v.accent').innerText = `$${parseFloat(b.current_bid).toFixed(2)}`;
+                timerEl.setAttribute('data-ends', b.ends_at);
+                
+                const diff = Math.max(0, Math.floor((new Date(b.ends_at).getTime() - Date.now()) / 1000));
+                const statusEl = card.querySelector('.status');
+                if (diff > 0 && diff < 120) {
+                    statusEl.innerText = 'ENDING';
+                    statusEl.className = 'status ending';
+                    card.classList.add('is-hot');
+                }
+
+                const stats = card.querySelector('.bidstats');
+                stats.innerHTML = `top <b>${b.top_bidder}</b>`;
+            }
+        });
+    });
+
+    // Toast Helper
+    function showToast(msg, kind) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<span class="tdot" style="background:${kind==='ok'?'var(--ok)':'var(--danger)'}"></span> ${msg}`;
+        toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
     }
-}
-
-function removeCard(id) {
-    const card = document.querySelector(`.card[data-id="${id}"]`);
-    if (card) {
-        card.style.opacity = '0';
-        card.style.transform = 'scale(0.9)';
-        setTimeout(() => card.remove(), 400);
-    }
-}
-
-// UI Helpers
-function showToast(msg, kind = 'ok') {
-    const wrap = document.getElementById('toast-wrap');
-    const toast = document.createElement('div');
-    toast.className = `toast ${kind}`;
-    toast.innerHTML = `<span class="tdot"></span><span>${msg}</span>`;
-    wrap.appendChild(toast);
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(20px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
-}
-
-function pushActivity(handle, amount, title) {
-    const feed = document.getElementById('activity-feed');
-    const item = document.createElement('div');
-    item.className = 'activity-item';
-    item.innerHTML = `<span class="dot"></span><span><b>${handle}</b> bid <b>$${Number(amount).toLocaleString()}</b> on ${title}</span>`;
-    feed.prepend(item);
-    if (feed.children.length > 10) feed.lastChild.remove();
-}
-
-function openPolicy(type) {
-    // Basic modal or redirect for now
-    window.location.href = type + '.php';
-}
+});

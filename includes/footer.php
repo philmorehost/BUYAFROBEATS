@@ -1,66 +1,117 @@
 <?php
 use BAF\Core;
+
 if (!isset($core) || !($core instanceof Core)) {
     $core = Core::get_instance();
 }
+/**
+ * BULLETPROOF FOOTER
+ * This footer is designed to be resilient against empty database settings,
+ * ad-blockers, and CMS errors.
+ */
 ?>
-    <footer class="site-footer">
-        <div class="f-inner">
-            <div class="f-grid">
-                <div class="f-col">
-                    <div class="f-logo"><?php echo $core->render_logo(); ?></div>
-                    <p class="f-tagline">Premium one-of-one Afrobeats instrumentals. Own the master, rule the charts. Every beat sold once, then gone forever.</p>
-                </div>
-                <div class="f-col">
-                    <div class="f-heading">Platform</div>
-                    <ul class="f-links">
-                        <li><a href="<?php echo $core->get_site_url(); ?>">Market</a></li>
-                        <li><button onclick="openPolicy('faq')">FAQ</button></li>
-                        <li><a href="#">Leaderboard</a></li>
-                    </ul>
-                </div>
-                <div class="f-col">
-                    <div class="f-heading">Legal</div>
-                    <ul class="f-links">
-                        <li><button onclick="openPolicy('terms')">Terms of Service</button></li>
-                        <li><button onclick="openPolicy('privacy')">Privacy Policy</button></li>
-                    </ul>
-                </div>
-                <div class="f-col">
-                    <div class="f-heading">Support</div>
-                    <p class="f-tagline" style="font-size: 13px;">Need help? Reach out to our 24/7 support team.</p>
-                    <a href="mailto:<?php echo Core::escape($core->setting('contact_email', 'hello@beatzaza.com')); ?>" class="btn btn-ghost" style="display: inline-block; margin-top: 10px;">
-                        <?php echo Core::escape($core->setting('contact_email', 'hello@beatzaza.com')); ?>
-                    </a>
+<footer class="site-f">
+    <div class="f-inner">
+        <div class="f-grid">
+            <!-- Brand Section -->
+            <div class="f-col f-brand-wrap">
+                <div class="f-logo"><?php echo $core->render_logo(); ?></div>
+                <p class="f-tagline">One-of-one beats. Exclusive rights. The clock is ticking.</p>
+                <div class="f-social">
+                    <?php if($ig = $core->setting('social_instagram')): ?>
+                        <a href="<?php echo \BAF\Core::escape($ig); ?>" target="_blank" aria-label="Instagram">IG</a>
+                    <?php endif; ?>
+                    <?php if($tw = $core->setting('social_twitter')): ?>
+                        <a href="<?php echo \BAF\Core::escape($tw); ?>" target="_blank" aria-label="Twitter">TW</a>
+                    <?php endif; ?>
+                    <a href="#" aria-label="WhatsApp">WA</a>
                 </div>
             </div>
-            <div class="f-bottom">
-                <div>&copy; <?php echo date('Y'); ?> <?php echo Core::escape($core->setting('site_title', 'BEATZAZA')); ?>. All rights reserved.</div>
-                <div>Powered by OBV Production</div>
+
+            <!-- Marketplace Links -->
+            <div class="f-col">
+                <div class="f-nav-group">
+                    <h4 class="f-heading">Marketplace</h4>
+                    <ul class="f-links">
+                        <li><a href="index.php">Browse All</a></li>
+                        <li><a href="index.php?genre=Afrobeats">Afrobeats</a></li>
+                        <li><a href="index.php?genre=Amapiano">Amapiano</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Company Links -->
+            <div class="f-col">
+                <div class="f-nav-group">
+                    <h4 class="f-heading">Company</h4>
+                    <ul class="f-links">
+                        <li><a href="faqs.php">FAQs</a></li>
+                        <li><a href="privacy.php">Privacy Policy</a></li>
+                        <li><a href="terms.php">Terms & Conditions</a></li>
+                        <?php 
+                        try {
+                            if ($core->db()) {
+                                @require_once __DIR__ . '/CMS.php';
+                                if (class_exists('\BAF\CMS')) {
+                                    $cms_f = new \BAF\CMS($core);
+                                    $dynamic_p = $cms_f->get_all_pages();
+                                    foreach ($dynamic_p as $p) {
+                                        $url = $p['is_external'] ? $p['external_url'] : "page?slug=".$p['slug'];
+                                        echo '<li><a href="'.\BAF\Core::escape($url).'">'.\BAF\Core::escape($p['title']).'</a></li>';
+                                    }
+                                }
+                            }
+                        } catch (\Throwable $e) { /* Fail silently to protect footer structure */ }
+                        ?>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Newsletter Section -->
+            <div class="f-col f-news-wrap">
+                <div class="f-news">
+                    <h4 class="f-heading">Join the Drop List</h4>
+                    <p>Get notified as soon as a new beat goes live.</p>
+                    <form id="f-news-form" class="f-news-field">
+                        <input type="email" name="email" placeholder="you@email.com" required>
+                        <button type="submit">Join →</button>
+                    </form>
+                    <div id="f-news-msg" style="font-size:11px; margin-top:8px;"></div>
+                </div>
             </div>
         </div>
-    </footer>
+        
+        <div class="f-bottom">
+            <span>&copy; <?php echo date('Y'); ?> <?php echo \BAF\Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
+            <div class="f-legal-links">
+                <a href="privacy.php">Privacy</a> · <a href="terms.php">Terms</a>
+            </div>
+        </div>
+    </div>
+</footer>
 
-    <div id="toast-wrap" class="toast-wrap"></div>
-
-    <script src="<?php echo $core->get_site_url(); ?>/assets/js/auction.js?v=3.0"></script>
-    <script>
-        function handleCredentialResponse(response) {
-            fetch('<?php echo $core->get_site_url(); ?>/api/auth/google_verify.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'credential=' + encodeURIComponent(response.credential) + '&csrf_token=<?php echo Core::csrf_token(); ?>'
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    console.error('Login failed:', data.error);
-                }
-            });
+<script>
+    // Newsletter Logic
+    document.getElementById('f-news-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const msg = document.getElementById('f-news-msg');
+        const formData = new FormData(form);
+        
+        try {
+            const res = await fetch('api/subscribe', { method: 'POST', body: formData });
+            const data = await res.json();
+            msg.innerText = data.message || data.error;
+            msg.style.color = data.success ? 'var(--ok)' : 'var(--danger)';
+            if (data.success) form.reset();
+        } catch (err) {
+            msg.innerText = 'Network error';
         }
-    </script>
-    <?php echo $core->render_footer_injection(); ?>
+    });
+</script>
+
+<div id="toast-container" class="toast-wrap"></div>
+<?php echo $core->render_footer_injection(); ?>
+<script src="assets/js/auction.js"></script>
 </body>
 </html>
