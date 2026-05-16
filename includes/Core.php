@@ -199,8 +199,20 @@ class Core {
 
     public function get_site_url() {
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-        $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-        return $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path;
+        $host = $_SERVER['HTTP_HOST'];
+        
+        // Calculate the base path relative to this file (which is in /includes/)
+        $current_dir = str_replace('\\', '/', __DIR__);
+        $doc_root = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
+        
+        // Find the root of the project (one level up from /includes/)
+        $project_root = dirname($current_dir);
+        
+        // The base path is the project root relative to the document root
+        $base_path = str_replace($doc_root, '', $project_root);
+        $base_path = rtrim($base_path, '/');
+        
+        return $protocol . "://" . $host . $base_path;
     }
 
     public function render_head_injection() {
