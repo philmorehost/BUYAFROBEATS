@@ -51,6 +51,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return barsHtml;
     };
 
+    // Feedback Sounds
+    const playFeedbackSound = (type = 'click') => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = type === 'error' ? 'sawtooth' : 'sine';
+        osc.frequency.setValueAtTime(type === 'bid' ? 880 : 440, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+    };
+
     let currentAudio = null;
     let audioTimer = null;
 
@@ -86,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         playBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            playFeedbackSound('click');
 
             if (card.classList.contains('is-playing')) {
                 stopAudio();
@@ -100,7 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
             stopAudio();
 
             currentAudio = new Audio(sampleUrl);
-            currentAudio.play();
+            currentAudio.play().catch(err => {
+                console.error("Autoplay prevented or network error", err);
+                showToast('Click again to play sample.', 'error');
+            });
             card.classList.add('is-playing');
             playBtn.querySelector('svg').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
 
@@ -118,14 +142,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateTimers = () => {
         document.querySelectorAll('.timer').forEach(el => {
             let ends = el.getAttribute('data-ends');
-            if (!ends) return;
+            if (!ends) {
+                el.innerText = "30:00";
+                return;
+            }
 
             // Handle Unix Timestamp (seconds) or Date String
-            let endsTs = isNaN(ends) ? new Date(ends).getTime() : parseInt(ends) * 1000;
+            let endsTs = !isNaN(ends) && ends.length > 5 ? parseInt(ends) * 1000 : new Date(ends).getTime();
+            
+            if (isNaN(endsTs)) {
+                el.innerText = "30:00";
+                return;
+            }
+
             const diff = Math.max(0, Math.floor((endsTs - Date.now()) / 1000));
             
             if (diff <= 0) {
-                el.innerText = "Ending...";
+                el.innerText = "CLOSED";
                 el.classList.add('danger');
                 return;
             }
@@ -144,19 +177,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal Logic
     document.querySelectorAll('.open-bid').forEach(btn => {
         btn.addEventListener('click', () => {
+            playFeedbackSound('click');
             const beat = JSON.parse(btn.getAttribute('data-beat'));
             document.getElementById('modal-beat-id').value = beat.id;
             document.getElementById('modal-amount').min = (parseFloat(beat.current_bid) || parseFloat(beat.starting_bid)) + (beat.top_bidder ? 5 : 0);
             document.getElementById('modal-amount').value = document.getElementById('modal-amount').min;
             
-            document.getElementById('modal-beat-info').innerHTML = `
-                <div style="font-weight:600">${beat.title}</div>
-                <div style="flex:1"></div>
-                <div style="text-align:right">
-                    <div style="font-size:10px; color:var(--ink-mute)">CURRENT BID</div>
-                    <div style="font-weight:700; color:var(--accent)">$${beat.current_bid}</div>
-                </div>
-            `;
+            const info = document.getElementById('modal-beat-info') || document.getElementById('modal-beat-title');
+            if (info) info.innerText = beat.title;
+            
             bidModal.classList.add('is-visible');
         });
     });
@@ -178,10 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             
             if (data.success) {
+                playFeedbackSound('bid');
                 showToast(`Bid placed successfully!`, 'ok');
                 bidModal.classList.remove('is-visible');
-                // Refresh will be handled by SSE or manual if stream fails
             } else {
+                playFeedbackSound('error');
                 showToast(data.error || 'Failed to place bid', 'error');
             }
         } catch (err) {
@@ -190,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // SSE Integration
-    const evtSource = new EventSource('api/stream');
+    const evtSource = new EventSource('api/updates.php');
     
     evtSource.addEventListener('activity', (e) => {
         const act = JSON.parse(e.data);
@@ -198,10 +228,13 @@ document.addEventListener('DOMContentLoaded', () => {
         item.className = 'activity-item';
         item.style.animation = 'toastIn 0.3s ease';
         item.innerHTML = `<span class="dot"></span><span><b>${act.user_handle}</b> ${act.message}</span>`;
-        activityList.prepend(item);
-        if (activityList.children.length > 8) activityList.lastChild.remove();
+        if (activityList) {
+            activityList.prepend(item);
+            if (activityList.children.length > 8) activityList.lastChild.remove();
+        }
         
         if (act.type === 'bid') {
+            playFeedbackSound('bid');
             showToast(`${act.user_handle} bid $${act.amount} on a beat!`, 'ok');
         }
     });
@@ -243,7 +276,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const toast = document.createElement('div');
         toast.className = 'toast';
         toast.innerHTML = `<span class="tdot" style="background:${kind==='ok'?'var(--ok)':'var(--danger)'}"></span> ${msg}`;
-        toastContainer.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
+        if (toastContainer) {
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        } else {
+            // Fallback for simple toast
+            const t = document.createElement('div');
+            t.style.cssText = 'position:fixed; bottom:20px; right:20px; background:var(--ink); color:#fff; padding:12px 20px; border-radius:12px; z-index:10000; font-size:12px;';
+            t.innerText = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
     }
 });

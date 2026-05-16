@@ -378,23 +378,4 @@ include __DIR__ . '/includes/header.php';
             submitBtn.innerText = "Place Bid →";
         }
     });
-
-    // Global countdown timer
-    setInterval(() => {
-        document.querySelectorAll('[data-ends]').forEach(el => {
-            const endsAt = new Date(el.getAttribute('data-ends')).getTime();
-            const now = new Date().getTime();
-            const diff = endsAt - now;
-
-            if (diff <= 0) {
-                el.innerText = "CLOSED";
-                el.style.color = "var(--ink-mute)";
-            } else {
-                const mins = Math.floor(diff / 60000);
-                const secs = Math.floor((diff % 60000) / 1000);
-                el.innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
-                if (mins < 2) el.style.color = "var(--danger)";
-            }
-        });
-    }, 1000);
 </script>

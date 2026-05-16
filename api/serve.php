@@ -53,15 +53,33 @@ if (!$token) {
     exit("Cloud storage authentication failed");
 }
 
-$ch = curl_init("https://www.googleapis.com/drive/v3/files/$drive_id?alt=media");
-curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
+$url = "https://www.googleapis.com/drive/v3/files/$drive_id?alt=media";
+
+// Handle Range headers for seeking
+$headers = ["Authorization: Bearer $token"];
+if (isset($_SERVER['HTTP_RANGE'])) {
+    $headers[] = 'Range: ' . $_SERVER['HTTP_RANGE'];
+}
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
 curl_setopt($ch, CURLOPT_BUFFERSIZE, 8192);
 
-header('Content-Type: audio/mpeg');
-header('Cache-Control: public, max-age=3600');
+// Forward response headers from Google
+curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) {
+    $len = strlen($header);
+    $header_clean = trim($header);
+    if (stripos($header_clean, 'Content-Type:') === 0 || 
+        stripos($header_clean, 'Content-Length:') === 0 || 
+        stripos($header_clean, 'Content-Range:') === 0 || 
+        stripos($header_clean, 'Accept-Ranges:') === 0) {
+        header($header_clean);
+    }
+    return $len;
+});
 
 curl_exec($ch);
 curl_close($ch);
