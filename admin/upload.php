@@ -105,6 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .drive-item .type { font-size: 10px; color: var(--ink-mute); font-family: 'JetBrains Mono', monospace; }
         .select-toggle { font-size: 11px; color: var(--accent); cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
         .selected-file { margin-top: 8px; font-size: 12px; color: var(--ok); background: color-mix(in oklab, var(--ok) 10%, transparent); padding: 8px 12px; border-radius: 8px; display: none; align-items: center; gap: 8px; }
+
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+        @media (max-width: 800px) {
+            .upload-grid { grid-template-columns: 1fr; }
+            .row2, .row3 { grid-template-columns: 1fr !important; }
+        }
     </style>
 </head>
 <body>
@@ -134,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo Core::csrf_token(); ?>">
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px;">
+            <div class="upload-grid">
                 <!-- Audio Field -->
                 <div class="field">
                     <label>Main Audio File (HQ)</label>
@@ -172,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" name="title" placeholder="LAGOS RAIN" required>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div class="row3">
                 <div class="field"><label>Starting Bid ($)</label><input type="number" name="starting_bid" value="99" required></div>
                 <div class="field"><label>BPM</label><input type="number" name="bpm" value="100"></div>
                 <div class="field">
@@ -183,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="row2">
                 <div class="field">
                     <label>Genre</label>
                     <select name="genre">
