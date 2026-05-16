@@ -111,8 +111,8 @@ if (isset($_GET['export']) && $is_admin) {
         <div class="banner-text" style="flex: 1;">
             <h3 style="margin: 0 0 4px; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em;">Welcome to your Dashboard</h3>
             <p style="margin: 0; font-size: 15px; color: var(--ink-dim); line-height: 1.6;">
-                A friendly reminder: To protect the total exclusivity of our beats, all files are removed from our servers 24 hours after purchase.
-                <span style="color: var(--ink); font-weight: 600;">Please make sure to download and back up your new beats within 24 hours.</span>
+                A friendly reminder: To protect the total exclusivity of our beats, all files are removed from our servers 7 days after purchase.
+                <span style="color: var(--ink); font-weight: 600;">Please make sure to download and back up your new beats within 7 days.</span>
             </p>
         </div>
     </div>

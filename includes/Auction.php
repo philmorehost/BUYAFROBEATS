@@ -146,14 +146,15 @@ class Auction {
     public function cleanup_sold_beats() {
         $db = $this->core->db();
         
-        // 1. SITE REMOVAL (24 Hours after sale)
+        // 1. SITE REMOVAL (Based on license_window setting)
         // Mark completed sales as expired so they disappear from the live catalog.
+        $license_window = (int)$this->core->setting('license_window', '7');
         $stmt = $db->prepare("UPDATE beats b 
                               JOIN sales s ON b.id = s.beat_id 
                               SET b.status = 'expired' 
                               WHERE b.status = 'sold' 
                               AND s.payment_status = 'completed' 
-                              AND s.sold_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+                              AND s.sold_at <= DATE_SUB(NOW(), INTERVAL $license_window DAY)");
         $stmt->execute();
 
         // 2. DOWNLOAD REVOCATION (7 Days after sale)

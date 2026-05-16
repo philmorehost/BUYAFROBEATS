@@ -60,7 +60,7 @@ class Email {
         $msg = "<h1>You Won!</h1><p>Congratulations! You are the highest bidder for <b>$beat_title</b> at <b>$" . number_format($amount, 2) . "</b>.</p>";
         $msg .= "<p>To claim your exclusive beat, please complete the payment using the link below:</p>";
         $msg .= "<a href='$payment_url' style='display:inline-block; background:#ffa326; color:#fff; padding:14px 28px; text-decoration:none; border-radius:999px; font-weight:bold;'>Complete Payment →</a>";
-        $msg .= "<p><small>Delivery ID: $delivery_id<br>Please note: The beat will be held for you for 24 hours. After payment, you will have 24 hours to download your file before it is permanently removed from our server.</small></p>";
+        $msg .= "<p><small>Delivery ID: $delivery_id<br>Please note: The beat will be held for you for 24 hours. After payment, you will have 7 days to download your file before it is permanently removed from our server.</small></p>";
         return $this->send($email, $subject, $this->wrap_template($msg));
     }
 
@@ -103,7 +103,7 @@ class Email {
             <p style='margin-top:10px;'>Track Stems are also included in your download package:</p>
             <a href='{$download_url}&type=stems' style='display:inline-block; background:#f0f0f0; color:#000; padding:10px 20px; text-decoration:none; border-radius:999px; font-size:13px; font-weight:bold;'>Download Stems (.ZIP)</a>" : "") . "
 
-            <p style='margin-top:30px; color:#d93025; font-size:13px; font-weight:bold;'>CRITICAL: You must download this file within 24 hours. To ensure exclusivity, the file will be permanently deleted from our server after this window.</p>
+            <p style='margin-top:30px; color:#d93025; font-size:13px; font-weight:bold;'>CRITICAL: You must download this file within 7 days. To ensure exclusivity, the file will be permanently deleted from our server after this window.</p>
         </div>";
 
         return $this->send($sale['winner_email'], $subject, $this->wrap_template($msg), [
