@@ -1,55 +1,43 @@
 <?php
 use BAF\Core;
-
 if (!isset($core) || !($core instanceof Core)) {
     $core = Core::get_instance();
 }
 ?>
-<footer class="site-f">
-    <div class="f-inner">
-        <div class="f-grid">
-            <div class="f-brand">
-                <div class="f-logo"><?php echo $core->render_logo(); ?></div>
-                <p class="f-tagline">Premium one-of-one afrobeats marketplace. Exclusive rights only. The clock is always ticking.</p>
-            </div>
-
-            <div class="f-col">
-                <h4 class="f-heading">Marketplace</h4>
-                <ul class="f-links">
-                    <li><a href="index">Browse All</a></li>
-                    <li><a href="index?genre=Afrobeats">Afrobeats</a></li>
-                    <li><a href="index?genre=Amapiano">Amapiano</a></li>
-                </ul>
-            </div>
-
-            <div class="f-col">
-                <h4 class="f-heading">Company</h4>
-                <ul class="f-links">
-                    <li><a href="faqs">FAQs</a></li>
-                    <li><a href="privacy">Privacy Policy</a></li>
-                    <li><a href="terms">Terms & Conditions</a></li>
-                </ul>
-            </div>
-
-            <div class="f-news">
-                <h4 class="f-heading">Join the Drop List</h4>
-                <p>Get notified as soon as a new beat goes live.</p>
-                <form id="f-news-form" class="f-news-field" style="display: flex; gap: 8px;">
-                    <input type="email" name="email" placeholder="you@email.com" required style="flex:1; padding:8px; border-radius:4px; border:1px solid var(--line); background:var(--bg); color:var(--ink);">
-                    <button type="submit" class="btn btn-primary" style="padding:8px 16px;">Join →</button>
-                </form>
-            </div>
+    <footer class="site-footer">
+        <div class="ft-brand">
+            <b><?php echo Core::escape($core->setting('site_title', 'BEATZAZA')); ?></b> — Premium One-of-One Auctions
         </div>
-        
-        <div class="f-bottom">
-            <p>&copy; <?php echo date('Y'); ?> <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</p>
-            <p><a href="privacy">Privacy</a> · <a href="terms">Terms</a></p>
+        <div class="ft-links">
+            <button onclick="openPolicy('terms')">Terms</button>
+            <button onclick="openPolicy('privacy')">Privacy</button>
+            <button onclick="openPolicy('faq')">FAQ</button>
         </div>
-    </div>
-</footer>
+        <div class="ft-contact">
+            Support: <a href="mailto:<?php echo Core::escape($core->setting('contact_email', 'hello@beatzaza.com')); ?>"><?php echo Core::escape($core->setting('contact_email', 'hello@beatzaza.com')); ?></a>
+        </div>
+    </footer>
 
-<div id="toast-container"></div>
-<?php echo $core->render_footer_injection(); ?>
-<script src="assets/js/auction.js?v=1.6"></script>
+    <div id="toast-wrap" class="toast-wrap"></div>
+
+    <script src="<?php echo $core->get_site_url(); ?>/assets/js/auction.js?v=3.0"></script>
+    <script>
+        function handleCredentialResponse(response) {
+            fetch('<?php echo $core->get_site_url(); ?>/api/auth/google_verify.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'credential=' + encodeURIComponent(response.credential) + '&csrf_token=<?php echo Core::csrf_token(); ?>'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    console.error('Login failed:', data.error);
+                }
+            });
+        }
+    </script>
+    <?php echo $core->render_footer_injection(); ?>
 </body>
 </html>

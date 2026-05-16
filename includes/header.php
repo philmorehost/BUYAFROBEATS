@@ -3,41 +3,80 @@ require_once __DIR__ . '/Core.php';
 require_once __DIR__ . '/Auction.php';
 
 use BAF\Core;
-
 $core = Core::get_instance();
-$site_title = str_replace(' ', '', $core->setting('site_title', 'BUYAFROBEATS'));
-$title = $site_title . " — exclusive beat auctions";
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <link rel="icon" type="image/svg+xml" href="<?php echo $core->render_favicon(); ?>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php echo $core->render_seo($page_seo ?? []); ?>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" href="assets/css/style.css?v=1.6">
+    <link rel="icon" type="image/svg+xml" href="<?php echo $core->render_favicon(); ?>">
+    
+    <!-- Speed: DNS Prefetch & Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://accounts.google.com">
+    
+    <!-- Critical Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Premium Design System -->
+    <link rel="stylesheet" href="<?php echo $core->get_site_url(); ?>/assets/css/style.css?v=3.1">
+    
+    <!-- Google Auth -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
     <?php echo $core->render_head_injection(); ?>
+    
+    <style>
+        /* Speed: Critical CSS for Top Layout */
+        .topbar { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+        body { visibility: hidden; opacity: 0; transition: opacity 0.3s ease; }
+        body.is-ready { visibility: visible; opacity: 1; }
+    </style>
 </head>
 <body>
+    <script>document.body.classList.add('is-ready');</script>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a href="<?php echo $core->get_site_url(); ?>" class="logo">
+                <?php echo $core->render_logo(); ?>
+            </a>
+            
+            <nav class="tabs">
+                <a href="<?php echo $core->get_site_url(); ?>" class="tab <?php echo (!isset($current_tab) || $current_tab === 'market') ? 'is-active' : ''; ?>">Market</a>
+                <a href="#" class="tab" onclick="openPolicy('faq'); return false;">FAQ</a>
+            </nav>
 
-<div class="topbar">
-    <div class="topbar-inner">
-        <a href="index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ live auctions</span></a>
-        <div class="tabs">
-            <a href="index" class="tab is-active">Auctions</a>
+            <div class="spacer"></div>
+
+            <div class="counter mono">
+                <span class="live-dot"></span>
+                <b>12</b> live auctions
+            </div>
+
             <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="admin/index" class="tab admin">Enter Studio</a>
+                <div class="user-pill">
+                    <span class="mono"><?php echo Core::escape($_SESSION['user_handle']); ?></span>
+                    <a href="<?php echo $core->get_site_url(); ?>/api/auth/logout" class="btn btn-ghost" style="padding: 6px 12px;">Sign Out</a>
+                </div>
             <?php else: ?>
-                <a href="register" class="tab">Signup</a>
-                <a href="login" class="tab">Login</a>
+                <div id="g_id_onload"
+                     data-client_id="<?php echo $core->setting('google_oauth_client_id'); ?>"
+                     data-context="signin"
+                     data-ux_mode="popup"
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-shape="pill"
+                     data-theme="outline"
+                     data-text="signin_with"
+                     data-size="medium"
+                     data-logo_alignment="left">
+                </div>
             <?php endif; ?>
         </div>
-        <div class="spacer"></div>
-        <div id="top-counter" class="counter">
-            <span class="live-dot"></span> <b>0</b> live · <b>0</b> total bids
-        </div>
-    </div>
-</div>
+    </header>

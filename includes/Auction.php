@@ -9,8 +9,8 @@ class Auction {
     }
 
     public function get_live_beats($genre = 'All', $search = '') {
-        // Include live beats and beats sold in the last 24 hours
-        $sql = "SELECT * FROM beats WHERE (status = 'live' OR (status = 'sold' AND ends_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)))";
+        // PRD: Sold beats are removed from the marketplace within 1 second of auction close.
+        $sql = "SELECT * FROM beats WHERE status = 'live'";
         $params = [];
 
         if ($genre !== 'All') {
@@ -24,7 +24,7 @@ class Auction {
             $params[] = "%$search%";
         }
 
-        $sql .= " ORDER BY status ASC, created_at DESC";
+        $sql .= " ORDER BY created_at DESC";
         $stmt = $this->core->db()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
@@ -32,11 +32,11 @@ class Auction {
 
     public function get_leaderboard($limit = 6) {
         // PRD Score: (Bids * 10) + (Price * 0.1) + (Urgency Boost if < 5m)
-        $stmt = $this->core->db()->query("SELECT *, 
+        $stmt = $this->core->db()->query("SELECT b.*, 
             ( 
                 (SELECT COUNT(*) FROM bids WHERE beat_id = b.id) * 10 + 
                 current_bid * 0.1 + 
-                IF(ends_at IS NOT NULL AND TIMESTAMPDIFF(MINUTE, NOW(), ends_at) < 5, 50, 0)
+                IF(ends_at IS NOT NULL AND TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), ends_at) < 300, 50, 0)
             ) as score 
             FROM beats b WHERE status = 'live' ORDER BY score DESC LIMIT $limit");
         return $stmt->fetchAll();
@@ -62,37 +62,42 @@ class Auction {
             }
 
             // Validation
-            $min_increment = 5;
+            $min_increment = (int)$this->core->setting('auction_min_increment', 5);
             $min_required = empty($beat['top_bidder']) ? $beat['starting_bid'] : $beat['current_bid'] + $min_increment;
 
             if ($amount < $min_required) {
                 throw new \Exception("Minimum bid required is $" . number_format($min_required, 2));
             }
 
-            if ($handle === $beat['top_bidder']) {
+            // Handle check
+            $handle = ltrim($handle, '@');
+            if ($handle === ltrim($beat['top_bidder'], '@')) {
                 throw new \Exception("You are already the top bidder.");
             }
 
-            // Anti-snipe: If bid in last 2 mins, extend by 2 mins
+            // Anti-snipe: If bid in last 2 mins, reset to 2 mins
             $now = time();
-            $ends_at = $beat['ends_at'] ? strtotime($beat['ends_at']) : ($now + 1800); // Start 30min on 1st bid
+            $duration = (int)$this->core->setting('auction_duration_min', 30) * 60;
+            $anti_snipe = (int)$this->core->setting('auction_anti_snipe_min', 2) * 60;
             
-            if ($ends_at - $now < 120) {
-                $ends_at = $now + 120;
+            $ends_at = $beat['ends_at'] ? strtotime($beat['ends_at']) : ($now + $duration);
+            
+            if ($ends_at - $now < $anti_snipe) {
+                $ends_at = $now + $anti_snipe;
             }
 
             // Update beat
-            $stmt = $db->prepare("UPDATE beats SET current_bid = ?, top_bidder = ?, ends_at = ?, status = 'live' WHERE id = ?");
-            $stmt->execute([$amount, $handle, date('Y-m-d H:i:s', $ends_at), $beat_id]);
+            $stmt = $db->prepare("UPDATE beats SET current_bid = ?, top_bidder = ?, ends_at = ? WHERE id = ?");
+            $stmt->execute([$amount, '@' . $handle, date('Y-m-d H:i:s', $ends_at), $beat_id]);
 
             // Insert bid
             $stmt = $db->prepare("INSERT INTO bids (beat_id, bidder_handle, bidder_email, amount, ip_address) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$beat_id, $handle, $email, $amount, $ip]);
+            $stmt->execute([$beat_id, '@' . $handle, $email, $amount, $ip]);
 
             // Log activity
             $stmt = $db->prepare("INSERT INTO activity (type, beat_id, user_handle, amount, message) VALUES ('bid', ?, ?, ?, ?)");
             $msg = "placed a bid of $" . number_format($amount, 2) . " on " . $beat['title'];
-            $stmt->execute([$beat_id, $handle, $amount, $msg]);
+            $stmt->execute([$beat_id, '@' . $handle, $amount, $msg]);
 
             $db->commit();
             return ['success' => true, 'ends_at' => $ends_at];
@@ -102,57 +107,81 @@ class Auction {
         }
     }
 
-    public function cleanup_sold_beats() {
-        $db = $this->core->db();
-        // Find beats sold more than 24 hours ago
-        // We join with sales to check payment status
-        $stmt = $db->prepare("
-            SELECT b.*, s.payment_status, s.delivery_id 
-            FROM beats b 
-            LEFT JOIN sales s ON b.id = s.beat_id 
-            WHERE b.status = 'sold' AND b.ends_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+    /**
+     * Builds the Payment Cascade chain for a finished auction.
+     * Takes each unique bidder's best bid, sorted high -> low.
+     */
+    public function build_cascade_chain($beat_id) {
+        $stmt = $this->core->db()->prepare("
+            SELECT bidder_handle, bidder_email, MAX(amount) as best_bid 
+            FROM bids 
+            WHERE beat_id = ? 
+            GROUP BY bidder_handle, bidder_email 
+            ORDER BY best_bid DESC
         ");
-        $stmt->execute();
-        $expired_beats = $stmt->fetchAll();
+        $stmt->execute([$beat_id]);
+        return $stmt->fetchAll();
+    }
 
-        foreach ($expired_beats as $beat) {
-            $db->beginTransaction();
-            try {
-                if ($beat['payment_status'] === 'completed') {
-                    // PAID: Expire and delete files (24h exclusivity policy)
-                    $storage = new \BAF\Storage();
-                    $files = ['audio_path', 'sample_path', 'stems_path'];
-                    foreach ($files as $col) {
-                        if (!empty($beat[$col])) {
-                            $path = $storage->get_file_path($beat[$col]);
-                            if (file_exists($path)) @unlink($path);
-                        }
-                    }
+    public function advance_cascade($delivery_id) {
+        $db = $this->core->db();
+        $db->beginTransaction();
 
-                    $stmt = $db->prepare("UPDATE beats SET status = 'expired', audio_path = '', sample_path = '', stems_path = '' WHERE id = ?");
-                    $stmt->execute([$beat['id']]);
-                } else {
-                    // UNPAID: Reverse back to market
-                    // Reset beat to live, clear timer and top bidder
-                    $stmt = $db->prepare("UPDATE beats SET status = 'live', top_bidder = NULL, current_bid = starting_bid, ends_at = NULL WHERE id = ?");
-                    $stmt->execute([$beat['id']]);
+        try {
+            $stmt = $db->prepare("SELECT * FROM sales WHERE delivery_id = ? FOR UPDATE");
+            $stmt->execute([$delivery_id]);
+            $sale = $stmt->fetch();
 
-                    // Delete the failed sales record
-                    if ($beat['delivery_id']) {
-                        $stmt = $db->prepare("DELETE FROM sales WHERE delivery_id = ?");
-                        $stmt->execute([$beat['delivery_id']]);
-                    }
-
-                    // Optional: Log activity
-                    $stmt = $db->prepare("INSERT INTO activity (type, beat_id, user_handle, amount, message) VALUES ('system', ?, 'SYSTEM', 0, ?)");
-                    $msg = "Auction for " . $beat['title'] . " was reversed due to non-payment.";
-                    $stmt->execute([$beat['id'], $msg]);
-                }
-
-                $db->commit();
-            } catch (\Exception $e) {
-                $db->rollBack();
+            if (!$sale || $sale['payment_status'] === 'completed') {
+                return false;
             }
+
+            $cascade = json_decode($sale['cascade_json'], true);
+            $next_index = $sale['claimant_index'] + 1;
+
+            if ($next_index >= count($cascade)) {
+                // End of the chain
+                $stmt = $db->prepare("UPDATE sales SET payment_status = 'failed' WHERE delivery_id = ?");
+                $stmt->execute([$delivery_id]);
+                $db->commit();
+                return false;
+            }
+
+            $next_claimant = $cascade[$next_index];
+            $payment_window = (int)$this->core->setting('payment_window_hours', 24);
+            $expires_at = date('Y-m-d H:i:s', strtotime("+$payment_window hours"));
+
+            $stmt = $db->prepare("UPDATE sales SET 
+                winner_handle = ?, 
+                winner_email = ?, 
+                price = ?, 
+                claimant_index = ?, 
+                payment_status = 'pending', 
+                expires_at = ?,
+                plisio_invoice_id = NULL,
+                plisio_invoice_url = NULL 
+                WHERE delivery_id = ?");
+            
+            $stmt->execute([
+                $next_claimant['bidder_handle'],
+                $next_claimant['bidder_email'],
+                $next_claimant['best_bid'],
+                $next_index,
+                $expires_at,
+                $delivery_id
+            ]);
+
+            $db->commit();
+
+            // Notify the new winner (Silent re-offer)
+            require_once __DIR__ . '/Email.php';
+            $email_svc = new Email($this->core);
+            $email_svc->notify_win_payment($next_claimant['bidder_email'], 'Your Beat', $next_claimant['best_bid'], $delivery_id);
+
+            return true;
+        } catch (\Exception $e) {
+            $db->rollBack();
+            return false;
         }
     }
 
@@ -168,36 +197,52 @@ class Auction {
         foreach ($expired as $beat) {
             $db->beginTransaction();
             try {
-                // Mark as sold
+                // 1. Build cascade chain
+                $chain = $this->build_cascade_chain($beat['id']);
+                if (empty($chain)) {
+                    $stmt = $db->prepare("UPDATE beats SET status = 'expired' WHERE id = ?");
+                    $stmt->execute([$beat['id']]);
+                    $db->commit();
+                    continue;
+                }
+
+                // 2. Mark as sold
                 $stmt = $db->prepare("UPDATE beats SET status = 'sold' WHERE id = ?");
                 $stmt->execute([$beat['id']]);
 
-                // Generate delivery record
-                $delivery_id = 'BAF-' . strtoupper(bin2hex(random_bytes(4)));
+                // 3. Create Sale record with first claimant
+                $delivery_id = 'BZZ-' . strtoupper(bin2hex(random_bytes(4)));
                 $download_token = bin2hex(random_bytes(32));
+                $payment_window = (int)$this->core->setting('payment_window_hours', 24);
+                $expires_at = date('Y-m-d H:i:s', strtotime("+$payment_window hours"));
+
+                $winner = $chain[0];
+
+                $stmt = $db->prepare("INSERT INTO sales (beat_id, delivery_id, winner_handle, winner_email, price, download_token, cascade_json, claimant_index, expires_at) 
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)");
                 
-                // Get winner email from latest bid
-                $stmt = $db->prepare("SELECT bidder_email FROM bids WHERE beat_id = ? ORDER BY amount DESC LIMIT 1");
-                $stmt->execute([$beat['id']]);
-                $winner_email = $stmt->fetchColumn();
+                $stmt->execute([
+                    $beat['id'], 
+                    $delivery_id, 
+                    $winner['bidder_handle'], 
+                    $winner['bidder_email'], 
+                    $winner['best_bid'], 
+                    $download_token, 
+                    json_encode($chain),
+                    $expires_at
+                ]);
 
-                $stmt = $db->prepare("INSERT INTO sales (beat_id, delivery_id, winner_handle, winner_email, price, download_token, expires_at) 
-                                      VALUES (?, ?, ?, ?, ?, ?, ?)");
-                // Download link expires in 24 hours to match file deletion
-                $expires_at = date('Y-m-d H:i:s', strtotime('+24 hours'));
-                $stmt->execute([$beat['id'], $delivery_id, $beat['top_bidder'], $winner_email, $beat['current_bid'], $download_token, $expires_at]);
-
-                // Log activity
+                // 4. Log activity (Original Top Bid)
                 $stmt = $db->prepare("INSERT INTO activity (type, beat_id, user_handle, amount, message) VALUES ('won', ?, ?, ?, ?)");
-                $msg = "won the auction for " . $beat['title'] . " at $" . number_format($beat['current_bid'], 2);
-                $stmt->execute([$beat['id'], $beat['top_bidder'], $beat['current_bid'], $msg]);
+                $msg = "won the auction for " . $beat['title'] . " at $" . number_format($winner['best_bid'], 2);
+                $stmt->execute([$beat['id'], $winner['bidder_handle'], $winner['best_bid'], $msg]);
 
                 $db->commit();
                 
-                // Trigger Winning Email with Payment Link
+                // 5. Trigger Winning Email
                 require_once __DIR__ . '/Email.php';
-                $email_svc = new \BAF\Email($this->core);
-                $email_svc->notify_win_payment($winner_email, $beat['title'], $beat['current_bid'], $delivery_id);
+                $email_svc = new Email($this->core);
+                $email_svc->notify_win_payment($winner['bidder_email'], $beat['title'], $winner['best_bid'], $delivery_id);
                 
             } catch (\Exception $e) {
                 $db->rollBack();

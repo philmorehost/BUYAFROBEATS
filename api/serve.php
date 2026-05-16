@@ -93,18 +93,16 @@ try {
 
     // Proxy external URL (users never see the real URL)
     if ($external_url) {
-        $mime = 'application/octet-stream';
-        $ext = strtolower(pathinfo($external_url, PATHINFO_EXTENSION));
-        if ($ext === 'mp3') {
-            $mime = 'audio/mpeg';
-        } elseif ($ext === 'wav') {
-            $mime = 'audio/wav';
-        } elseif (in_array($ext, ['aif', 'aiff'])) {
-            $mime = 'audio/x-aiff';
-        } elseif ($ext === 'zip') {
-            $mime = 'application/zip';
+        require_once __DIR__ . '/../includes/GoogleDrive.php';
+        $drive_id = \BAF\GoogleDrive::extract_id($external_url);
+        
+        $download_url = $external_url;
+        if ($drive_id) {
+            $drive = new \BAF\GoogleDrive();
+            $download_url = $drive->get_download_link($drive_id);
         }
 
+        $mime = 'audio/mpeg';
         if ($download) {
             header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
         } else {
@@ -114,30 +112,14 @@ try {
         header('Content-Type: ' . $mime);
         header('Cache-Control: public, max-age=3600');
         
-        // Use streaming instead of file_get_contents to save memory
-        $ctx = stream_context_create(['http' => ['timeout' => 60]]);
-        $handle = @fopen($external_url, 'rb', false, $ctx);
-        
-        if ($handle === false) {
-            header('HTTP/1.1 503 Service Unavailable');
-            exit('Unable to fetch file from external source');
-        }
-
-        // Try to get content length if available
-        $meta = stream_get_meta_data($handle);
-        if (isset($meta['wrapper_data'])) {
-            foreach ($meta['wrapper_data'] as $header) {
-                if (stripos($header, 'Content-Length:') === 0) {
-                    header($header);
-                }
-            }
-        }
-
-        // Stream the file in 8KB chunks
-        while (!feof($handle)) {
-            echo fread($handle, 8192);
-        }
-        fclose($handle);
+        // Use streaming via CURL for Google Drive
+        $ch = curl_init($download_url);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+        curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_exec($ch);
+        curl_close($ch);
         exit;
     }
 } catch (\Exception $e) {

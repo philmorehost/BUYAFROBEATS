@@ -1,22 +1,29 @@
-Options -MultiViews
-RewriteEngine On
-RewriteBase /
+# BEATZAZA Security Hardening
+Options -Indexes
 
-# 1. Handle Admin Clean URLs (Priority)
-# If /admin/something is requested and /admin/something.php exists, rewrite to it.
-RewriteCond %{DOCUMENT_ROOT}/admin/$1.php -f
-RewriteRule ^admin/(.*)$ admin/$1.php [L]
+# Protect sensitive files
+<FilesMatch "(\.sql|\.bak|\.bak|\.log|config\.php|composer\..*|package.*\.json)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
 
-# 2. Redirect /index.php to /
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
-RewriteRule ^index\.php$ / [R=301,L]
+# Prevent script execution in uploads
+<Directory "/uploads">
+    <FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+        Order Deny,Allow
+        Deny from all
+    </FilesMatch>
+</Directory>
 
-# 3. Internally rewrite /page to /page.php for root files
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^(.*)$ $1.php [L]
+# Gzip compression for performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/x-javascript application/json
+</IfModule>
 
-# 4. Redirect /page.php to /page (SEO) - Exclude Admin
-RewriteCond %{REQUEST_URI} !^/admin/
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
-RewriteRule ^(.+)\.php$ /$1 [R=301,L]
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType application/json "access plus 0 seconds"
+</IfModule>

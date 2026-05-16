@@ -6,178 +6,174 @@ use BAF\Core;
 use BAF\Auction;
 
 $core = Core::get_instance();
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login');
+
+// Auth Check
+if (!$core->is_admin()) {
+    header('Location: ../index.php');
     exit;
 }
 
-$is_admin = $core->is_admin();
 $auction = new Auction($core);
-$beats = $is_admin ? $auction->get_live_beats() : [];
+$beats = $auction->get_live_beats();
 
 // Stats
-$total_rev = $core->db()->query("SELECT SUM(price) FROM sales")->fetchColumn() ?: 0;
-$sold_count = $core->db()->query("SELECT COUNT(*) FROM sales")->fetchColumn();
+$total_rev = $core->db()->query("SELECT SUM(price) FROM sales WHERE payment_status = 'completed'")->fetchColumn() ?: 0;
+$sold_count = $core->db()->query("SELECT COUNT(*) FROM sales WHERE payment_status = 'completed'")->fetchColumn();
 $live_count = count($beats);
 $avg_sale = $sold_count > 0 ? $total_rev / $sold_count : 0;
 
-$sales = $core->db()->query("SELECT s.*, b.title as beat_title FROM sales s JOIN beats b ON s.beat_id = b.id ORDER BY sold_at DESC")->fetchAll();
+$sales = $core->db()->query("SELECT s.*, b.title as beat_title 
+                             FROM sales s 
+                             JOIN beats b ON s.beat_id = b.id 
+                             ORDER BY sold_at DESC")->fetchAll();
 
-// CSV Export Logic
-if (isset($_GET['export']) && $is_admin) {
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="BUYAFROBEATS_Sales_' . date('Y-m-d') . '.csv"');
-    $output = fopen('php://output', 'w');
-    fputcsv($output, ['Delivery ID', 'Beat Title', 'Winner Handle', 'Winner Email', 'Price', 'Status', 'Sold At']);
-    foreach ($sales as $s) {
-        fputcsv($output, [$s['delivery_id'], $s['beat_title'], $s['winner_handle'], $s['winner_email'], $s['price'], $s['payment_status'], $s['sold_at']]);
-    }
-    fclose($output);
-    exit;
-}
-
+$current_tab = 'studio';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>My Studio — <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio — <?php echo Core::escape($core->setting('site_title', 'BEATZAZA')); ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css?v=3.0">
     <style>
-        .admin-banner { display: inline-flex; align-items: center; gap: 8px; font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); background: color-mix(in oklab, var(--accent) 12%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--line)); padding: 5px 10px; border-radius: 999px; margin-bottom: 16px; letter-spacing: 0.08em; text-transform: uppercase; }
-        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
-        .stat-card { background: var(--bg-2); border: 1px solid var(--line); padding: 14px 16px; border-radius: 14px; }
-        .stat-card .k { font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.08em; }
-        .stat-card .v { font-size: 24px; font-weight: 600; margin-top: 4px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 40px; }
+        .stat-card { background: var(--bg-2); border: 1px solid var(--line); padding: 20px; border-radius: var(--radius-lg); }
+        .stat-card .k { font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em; }
+        .stat-card .v { font-size: 32px; font-weight: 700; margin-top: 8px; }
         .stat-card .v.accent { color: var(--accent); }
+        
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .section-header h2 { font-size: 24px; letter-spacing: -0.02em; }
+        
+        .log-table { width: 100%; border-collapse: collapse; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+        .log-table th, .log-table td { padding: 16px; text-align: left; border-bottom: 1px solid var(--line); }
+        .log-table th { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-mute); text-transform: uppercase; background: var(--bg-3); }
+        .log-table tr:last-child td { border-bottom: 0; }
+        
+        .badge { display: inline-flex; padding: 4px 10px; border-radius: var(--radius-full); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+        .badge.pending { background: color-mix(in oklab, var(--accent) 15%, transparent); color: var(--accent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--line)); }
+        .badge.completed { background: color-mix(in oklab, var(--ok) 15%, transparent); color: var(--ok); border: 1px solid color-mix(in oklab, var(--ok) 30%, var(--line)); }
+        .badge.expired { background: color-mix(in oklab, var(--danger) 15%, transparent); color: var(--danger); border: 1px solid color-mix(in oklab, var(--danger) 30%, var(--line)); }
     </style>
 </head>
 <body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a href="../index.php" class="logo">
+                <?php echo $core->render_logo(); ?> <span style="opacity: 0.5; margin-left: 8px; font-weight: 400;">Studio</span>
+            </a>
+            <nav class="tabs">
+                <a href="index.php" class="tab is-active">Overview</a>
+                <a href="upload.php" class="tab">+ Upload Beat</a>
+                <a href="settings.php" class="tab">Settings</a>
+            </nav>
+            <div class="spacer"></div>
+            <div class="user-pill mono">
+                <?php echo Core::escape($_SESSION['user_handle']); ?>
+            </div>
+        </div>
+    </header>
 
-<div class="topbar">
-    <div class="topbar-inner">
-        <a href="../index" class="logo"><span class="dot"></span><?php echo $core->render_logo(); ?><span class="sub">/ studio</span></a>
-        <div class="tabs">
-            <a href="index" class="tab is-active">Dashboard</a>
-            <?php if ($is_admin): ?>
-                <a href="upload" class="tab">+ Upload Beat</a>
-                <a href="settings" class="tab">Settings</a>
+    <main class="page">
+        <div class="admin-banner"><span class="live-dot"></span> Studio Session Active</div>
+        
+        <div class="stat-grid">
+            <div class="stat-card"><div class="k">Live Auctions</div><div class="v"><?php echo $live_count; ?></div></div>
+            <div class="stat-card"><div class="k">Beats Sold</div><div class="v"><?php echo $sold_count; ?></div></div>
+            <div class="stat-card"><div class="k">Total Revenue</div><div class="v accent">$<?php echo number_format($total_rev, 0); ?></div></div>
+            <div class="stat-card"><div class="k">Avg. Sale</div><div class="v">$<?php echo number_format($avg_sale, 0); ?></div></div>
+        </div>
+
+        <section style="margin-bottom: 60px;">
+            <div class="section-header">
+                <h2>Live Catalog</h2>
+                <a href="upload.php" class="btn btn-primary">+ New Auction</a>
+            </div>
+
+            <?php if (empty($beats)): ?>
+                <div class="empty">
+                    <h3>No live auctions</h3>
+                    <p>Beats uploaded will appear here once an auction starts.</p>
+                </div>
+            <?php else: ?>
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Beat Details</th>
+                            <th>Current Bid</th>
+                            <th>Time Left</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($beats as $b): ?>
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600;"><?php echo Core::escape($b['title']); ?></div>
+                                    <div class="mono" style="font-size: 11px; color: var(--ink-mute);"><?php echo $b['genre']; ?> · <?php echo $b['bpm']; ?> BPM</div>
+                                </td>
+                                <td class="mono">$<?php echo number_format($b['current_bid'], 0); ?></td>
+                                <td class="mono"><?php echo $b['ends_at'] ?: 'Not started'; ?></td>
+                                <td>
+                                    <a href="edit.php?id=<?php echo $b['id']; ?>" class="btn" style="padding: 6px 12px; font-size: 12px;">Edit</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             <?php endif; ?>
-        </div>
-        <div class="spacer"></div>
-        <div class="counter"><b>Logged in as <?php echo $_SESSION['username']; ?></b></div>
-        <a href="logout" class="tab" style="font-size: 11px;">Logout</a>
-    </div>
-</div>
+        </section>
 
-<div class="page">
-    <!-- Friendly Download Policy Notice -->
-    <div style="background: color-mix(in oklab, var(--accent) 5%, var(--bg-2)); border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-bottom: 32px; display: flex; align-items: center; gap: 24px; animation: cardIn .4s ease both;">
-        <div style="width: 54px; height: 54px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        </div>
-        <div style="flex: 1;">
-            <h3 style="margin: 0 0 4px; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em;">Welcome to your Dashboard</h3>
-            <p style="margin: 0; font-size: 15px; color: var(--ink-dim); line-height: 1.6;">
-                A friendly reminder: To protect the total exclusivity of our beats, all files are removed from our servers 24 hours after purchase.
-                <span style="color: var(--ink); font-weight: 600;">Please make sure to download and back up your new beats within 24 hours.</span>
-            </p>
-        </div>
-    </div>
+        <section>
+            <div class="section-header">
+                <h2>Sales History</h2>
+            </div>
 
-    <?php if ($is_admin): ?>
-    <div class="admin-banner"><span style="width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block;"></span> Admin · Only you see this</div>
-    
-    <div style="display:flex; align-items: center; justify-content:space-between; margin-bottom: 24px;">
-        <h2 style="margin:0; font-size:28px; letter-spacing:-0.02em;">Studio Overview</h2>
-        <a href="upload" class="btn btn-primary">+ Upload new beat</a>
-    </div>
+            <?php if (empty($sales)): ?>
+                <div class="empty">
+                    <h3>No sales records</h3>
+                    <p>Once an auction is won, it will appear here for tracking.</p>
+                </div>
+            <?php else: ?>
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Beat</th>
+                            <th>Winner</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th>Sold At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($sales as $s): ?>
+                            <tr>
+                                <td class="mono" style="font-size: 11px; color: var(--ink-mute);"><?php echo $s['delivery_id']; ?></td>
+                                <td style="font-weight: 500;"><?php echo Core::escape($s['beat_title']); ?></td>
+                                <td>
+                                    <div class="mono" style="font-size: 13px;"><?php echo Core::escape($s['winner_handle']); ?></div>
+                                    <div class="mono" style="font-size: 11px; color: var(--ink-mute);"><?php echo $s['winner_email']; ?></div>
+                                </td>
+                                <td class="mono" style="font-weight: 700; color: var(--accent);">$<?php echo number_format($s['price'], 0); ?></td>
+                                <td>
+                                    <span class="badge <?php echo $s['payment_status']; ?>"><?php echo $s['payment_status']; ?></span>
+                                </td>
+                                <td class="mono" style="font-size: 12px; color: var(--ink-dim);"><?php echo date('M d, H:i', strtotime($s['sold_at'])); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </section>
+    </main>
 
-    <div class="stat-grid">
-        <div class="stat-card"><div class="k">Live Auctions</div><div class="v"><?php echo $live_count; ?></div></div>
-        <div class="stat-card"><div class="k">Beats Sold</div><div class="v"><?php echo $sold_count; ?></div></div>
-        <div class="stat-card"><div class="k">Total Revenue</div><div class="v accent">$<?php echo number_format($total_rev, 2); ?></div></div>
-        <div class="stat-card"><div class="k">Avg. Sale</div><div class="v">$<?php echo number_format($avg_sale, 2); ?></div></div>
-    </div>
-
-    <h3 style="font-size:14px; margin:0 0 12px; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)">Live Catalog</h3>
-    <?php if (empty($beats)): ?>
-        <div class="empty" style="margin-bottom:32px; border: 1px dashed var(--line); border-radius: 18px; padding: 40px; text-align:center;">
-            <h3>Nothing live</h3>
-            <p>Upload your next beat to open the next auction.</p>
-        </div>
-    <?php else: ?>
-        <table class="log-table" style="margin-bottom:32px;">
-            <thead><tr><th>Beat</th><th>Current Bid</th><th>Bids</th><th>Top Bidder</th><th>Time Left</th><th>Actions</th></tr></thead>
-            <tbody>
-                <?php foreach ($beats as $b): ?>
-                    <tr>
-                        <td><b><?php echo Core::escape($b['title']); ?></b> <span class="mono" style="color:var(--ink-mute); font-size:11px">· <?php echo $b['genre']; ?></span></td>
-                        <td class="mono">$<?php echo number_format($b['current_bid'], 2); ?></td>
-                        <td class="mono"><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$b['id']}")->fetchColumn(); ?></td>
-                        <td class="mono" style="font-size:12px"><?php echo $b['top_bidder'] ?: '—'; ?></td>
-                        <td class="mono" style="font-size:12px"><?php echo $b['ends_at'] ?: 'Not started'; ?></td>
-                        <td style="text-align:right; white-space:nowrap;">
-                            <a href="edit?id=<?php echo $b['id']; ?>" class="btn" style="font-size:10px; padding: 4px 8px; border: 1px solid var(--line); background: transparent;">Edit</a>
-                            <a href="delete?id=<?php echo $b['id']; ?>" class="btn" style="font-size:10px; padding: 4px 8px; color: var(--danger); border: 1px solid var(--danger); background: transparent;" onclick="return confirm('Are you sure you want to delete this beat? This cannot be undone.')">Delete</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
-
-    <?php endif; // End Admin Check ?>
-
-    <div style="display:flex; align-items: center; justify-content:space-between; margin:0 0 12px;">
-        <h3 style="font-size:14px; margin:0; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)"><?php echo $is_admin ? 'Sales Log' : 'My Purchases'; ?></h3>
-        <?php if ($is_admin && !empty($sales)): ?>
-            <a href="?export=1" class="btn" style="font-size: 10px; padding: 5px 12px; border: 1px solid var(--line); background: transparent;">Export CSV ↓</a>
-        <?php endif; ?>
-    </div>
-    <?php
-    // If not admin, only show user's own sales
-    if (!$is_admin) {
-        $sales = $core->db()->prepare("SELECT s.*, b.title as beat_title FROM sales s JOIN beats b ON s.beat_id = b.id WHERE s.winner_email = ? ORDER BY sold_at DESC");
-        // We might need the user's email from the session or users table
-        $stmt_user = $core->db()->prepare("SELECT email FROM users WHERE id = ?");
-        $stmt_user->execute([$_SESSION['user_id']]);
-        $user_email = $stmt_user->fetchColumn();
-        $sales->execute([$user_email]);
-        $sales = $sales->fetchAll();
-    }
-
-    if (empty($sales)): ?>
-        <div class="empty" style="border: 1px dashed var(--line); border-radius: 18px; padding: 40px; text-align:center;">
-            <h3>No sales yet</h3>
-            <p>When an auction ends, the delivery record lands here.</p>
-        </div>
-    <?php else: ?>
-        <table class="log-table">
-            <thead><tr><th>Delivery ID</th><th>Beat</th><th>Winner</th><th>Price</th><th>Date</th></tr></thead>
-            <tbody>
-                <?php foreach ($sales as $s): ?>
-                    <tr>
-                        <td class="mono" style="color:var(--ink-mute)"><?php echo $s['delivery_id']; ?></td>
-                        <td><b><?php echo Core::escape($s['beat_title']); ?></b></td>
-                        <td class="mono" style="font-size:12px"><?php echo $s['winner_handle']; ?><br><span style="color:var(--ink-mute); font-size:11px"><?php echo $s['winner_email']; ?></span></td>
-                        <td class="mono" style="color:var(--accent)">$<?php echo number_format($s['price'], 2); ?></td>
-                        <td class="mono" style="font-size:12px; color:var(--ink-dim)"><?php echo date('M d · H:i', strtotime($s['sold_at'])); ?></td>
-                        <td style="text-align:right">
-                            <?php if ($s['payment_status'] === 'completed'): ?>
-                                <a href="../api/download?token=<?php echo $s['download_token']; ?>" class="btn btn-primary" style="font-size:10px; padding: 4px 12px;">Download HQ</a>
-                            <?php else: ?>
-                                <a href="../pay?id=<?php echo $s['delivery_id']; ?>" class="btn" style="font-size:10px; padding: 4px 12px;">Pay Now</a>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
-</div>
-
+    <footer class="site-footer">
+        <div class="ft-brand"><b>BEATZAZA STUDIO</b> v3.0</div>
+    </footer>
 </body>
 </html>

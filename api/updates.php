@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/Core.php';
+
 use BAF\Core;
 
 header('Content-Type: text/event-stream');
@@ -8,43 +9,27 @@ header('Connection: keep-alive');
 header('X-Accel-Buffering: no'); // Disable buffering for Nginx
 
 $core = Core::get_instance();
-$last_activity_id = $_GET['last_id'] ?? 0;
+$last_id = isset($_SERVER['HTTP_LAST_EVENT_ID']) ? (int)$_SERVER['HTTP_LAST_EVENT_ID'] : 0;
 
-// CRITICAL: Release the session lock so other pages can load
-// while this infinite loop is running.
-if (session_status() === PHP_SESSION_ACTIVE) {
-    session_write_close();
-}
+// Set high timeout
+set_time_limit(0);
 
-// Poll for changes
 while (true) {
-    if (connection_aborted()) break;
-
-    $db = $core->db();
-    
-    // Check for new activity
-    $stmt = $db->prepare("SELECT a.*, b.title, b.current_bid, b.ends_at, b.status as beat_status 
-                          FROM activity a 
-                          JOIN beats b ON a.beat_id = b.id 
-                          WHERE a.id > ? 
-                          ORDER BY a.id ASC LIMIT 10");
-    $stmt->execute([$last_activity_id]);
+    // Check for new bids or activities in the last 30 seconds
+    $stmt = $core->db()->prepare("SELECT * FROM activity WHERE id > ? ORDER BY id ASC LIMIT 10");
+    $stmt->execute([$last_id]);
     $activities = $stmt->fetchAll();
 
-    if (!empty($activities)) {
-        foreach ($activities as $act) {
-            echo "event: activity\n";
-            echo "data: " . json_encode($act) . "\n\n";
-            $last_activity_id = $act['id'];
-        }
+    foreach ($activities as $act) {
+        $last_id = $act['id'];
+        echo "id: $last_id\n";
+        echo "data: " . json_encode($act) . "\n\n";
     }
 
-    // Always push heartbeat/timestamp to keep connection alive and sync clocks
-    echo "event: sync\n";
-    echo "data: " . json_encode(['server_time' => time()]) . "\n\n";
-
-    ob_flush();
+    if (ob_get_level() > 0) ob_flush();
     flush();
 
-    sleep(5); // Poll every 5 seconds (was 2, causing DB exhaustion)
+    if (connection_aborted()) break;
+
+    sleep(2); // Poll every 2 seconds
 }
