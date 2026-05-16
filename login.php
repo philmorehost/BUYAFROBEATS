@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $u['id'];
         $_SESSION['user_role'] = $u['role'];
         $_SESSION['username'] = $u['username'];
+        $_SESSION['user_email'] = $u['email'];
         header('Location: admin/index');
         exit;
     } else {
@@ -77,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($google_id):
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
             $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/google_callback';
+            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/google_callback.php';
             $google_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
                 'client_id' => $google_id,
                 'redirect_uri' => $redirect_uri,

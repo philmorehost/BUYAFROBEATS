@@ -5,15 +5,13 @@ RewriteEngine On
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php\ HTTP/
 RewriteRule ^index\.php$ / [R=301,L]
 
-# Redirect /page.php to /page (but exclude API endpoints)
-RewriteCond %{REQUEST_URI} !^/api/
-RewriteCond %{REQUEST_URI} !^/admin/api/
+# Redirect /page.php to /page (but exclude API endpoints to keep POST data)
+RewriteCond %{REQUEST_URI} !/api/
+RewriteCond %{REQUEST_URI} !/admin/api/
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^\ ]+)\.php\ HTTP/
-RewriteRule ^(.+)\.php$ /$1 [R=301,L]
+RewriteRule ^(.+)\.php$ $1 [R=301,L]
 
-# Internally rewrite /page to /page.php (but not for /api/ or /admin/api/)
-RewriteCond %{REQUEST_URI} !^/api/
-RewriteCond %{REQUEST_URI} !^/admin/api/
+# Internally rewrite /page to /page.php
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
 RewriteRule ^(.*)$ $1.php [L]

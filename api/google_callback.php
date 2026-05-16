@@ -20,7 +20,7 @@ if (!$client_id || !$client_secret) {
 // 2. Exchange code for access token
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
 $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-$redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/google_callback';
+$redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/google_callback.php';
 
 $ch = curl_init('https://oauth2.googleapis.com/token');
 curl_setopt($ch, CURLOPT_POST, true);
@@ -51,7 +51,7 @@ if (!isset($user_info['email'])) {
 }
 
 // 4. Find or Create User
-$email = $user_info['email'];
+$email = strtolower(trim($user_info['email']));
 $name = $user_info['name'] ?? explode('@', $email)[0];
 $username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
 
@@ -80,6 +80,7 @@ session_regenerate_id(true);
 $_SESSION['user_id'] = $user['id'];
 $_SESSION['user_role'] = $user['role'];
 $_SESSION['username'] = $user['username'];
+$_SESSION['user_email'] = $user['email'];
 
 header('Location: ../admin/index');
 exit;

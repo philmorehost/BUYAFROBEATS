@@ -152,30 +152,47 @@ if (isset($_GET['export']) && $is_admin) {
     <?php endif; // End Admin Check ?>
 
     <div style="display:flex; align-items: center; justify-content:space-between; margin:0 0 12px;">
-        <h3 style="font-size:14px; margin:0; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)"><?php echo $is_admin ? 'Sales Log' : 'My Purchases'; ?></h3>
+        <h3 style="font-size:14px; margin:0; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)"><?php echo $is_admin ? 'Sales Log' : 'Won Auctions'; ?></h3>
         <?php if ($is_admin && !empty($sales)): ?>
             <a href="?export=1" class="btn" style="font-size: 10px; padding: 5px 12px; border: 1px solid var(--line); background: transparent;">Export CSV ↓</a>
         <?php endif; ?>
     </div>
     <?php
-    // If not admin, only show user's own sales
+    // If not admin, only show user's own sales and bids
     if (!$is_admin) {
-        $sales = $core->db()->prepare("SELECT s.*, b.title as beat_title FROM sales s JOIN beats b ON s.beat_id = b.id WHERE s.winner_email = ? ORDER BY sold_at DESC");
-        // We might need the user's email from the session or users table
-        $stmt_user = $core->db()->prepare("SELECT email FROM users WHERE id = ?");
-        $stmt_user->execute([$_SESSION['user_id']]);
-        $user_email = $stmt_user->fetchColumn();
-        $sales->execute([$user_email]);
-        $sales = $sales->fetchAll();
+        $user_email = $_SESSION['user_email'] ?? '';
+        if (empty($user_email)) {
+            $stmt_user = $core->db()->prepare("SELECT email FROM users WHERE id = ?");
+            $stmt_user->execute([$_SESSION['user_id']]);
+            $user_email = $stmt_user->fetchColumn();
+            $_SESSION['user_email'] = $user_email;
+        }
+
+        // Get Sales
+        $sales_stmt = $core->db()->prepare("SELECT s.*, b.title as beat_title FROM sales s JOIN beats b ON s.beat_id = b.id WHERE s.winner_email = ? ORDER BY sold_at DESC");
+        $sales_stmt->execute([$user_email]);
+        $sales = $sales_stmt->fetchAll();
+
+        // Get Bids (Active or Past)
+        $bids_stmt = $core->db()->prepare("
+            SELECT b.*, be.title as beat_title, be.status as beat_status, be.top_bidder, be.current_bid as beat_current_bid
+            FROM bids b 
+            JOIN beats be ON b.beat_id = be.id 
+            WHERE b.bidder_email = ? 
+            GROUP BY b.beat_id 
+            ORDER BY b.created_at DESC
+        ");
+        $bids_stmt->execute([$user_email]);
+        $my_bidding = $bids_stmt->fetchAll();
     }
 
     if (empty($sales)): ?>
-        <div class="empty" style="border: 1px dashed var(--line); border-radius: 18px; padding: 40px; text-align:center;">
-            <h3>No sales yet</h3>
-            <p>When an auction ends, the delivery record lands here.</p>
+        <div class="empty" style="border: 1px dashed var(--line); border-radius: 18px; padding: 40px; text-align:center; margin-bottom:32px;">
+            <h3>No won auctions yet</h3>
+            <p>When you win an auction, your delivery record will appear here.</p>
         </div>
     <?php else: ?>
-        <div class="table-wrap" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <div class="table-wrap" style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom:32px;">
             <table class="log-table" style="width: 100%; min-width: 800px;">
                 <thead><tr><th>Delivery ID</th><th>Beat</th><th>Winner</th><th>Price</th><th>Date</th><th style="text-align:right">Actions</th></tr></thead>
                 <tbody>
@@ -198,6 +215,51 @@ if (isset($_GET['export']) && $is_admin) {
                 </tbody>
             </table>
         </div>
+    <?php endif; ?>
+
+    <?php if (!$is_admin): ?>
+        <h3 style="font-size:14px; margin:0 0 12px; font-family:'JetBrains Mono', monospace; text-transform:uppercase; color:var(--ink-mute)">My Bidding Activity</h3>
+        <?php if (empty($my_bidding)): ?>
+            <div class="empty" style="border: 1px dashed var(--line); border-radius: 18px; padding: 40px; text-align:center;">
+                <h3>No bids placed</h3>
+                <p>When you bid on a beat, your activity will be tracked here.</p>
+            </div>
+        <?php else: ?>
+            <div class="table-wrap" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table class="log-table" style="width: 100%; min-width: 800px;">
+                    <thead><tr><th>Beat</th><th>Status</th><th>Your High Bid</th><th>Current High</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($my_bidding as $b): 
+                            $is_top = ($b['bidder_handle'] === $b['top_bidder']);
+                            $is_live = ($b['beat_status'] === 'live');
+                        ?>
+                            <tr>
+                                <td><b><?php echo Core::escape($b['beat_title']); ?></b></td>
+                                <td><span class="status <?php echo $b['beat_status']; ?>" style="font-size:10px; padding:2px 6px; border-radius:4px;"><?php echo strtoupper($b['beat_status']); ?></span></td>
+                                <td class="mono">$<?php echo number_format($b['amount'], 2); ?></td>
+                                <td class="mono">$<?php echo number_format($b['beat_current_bid'], 2); ?></td>
+                                <td>
+                                    <?php if ($is_live): ?>
+                                        <?php if ($is_top): ?>
+                                            <span style="color:var(--accent); font-weight:bold; font-size:11px;">★ TOP BIDDER</span>
+                                        <?php else: ?>
+                                            <span style="color:var(--danger); font-size:11px;">OUTBID</span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span style="color:var(--ink-mute); font-size:11px;">ENDED</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="text-align:right">
+                                    <?php if ($is_live): ?>
+                                        <a href="../index" class="btn" style="font-size:10px; padding: 4px 12px;">View Auction</a>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 </div>
 

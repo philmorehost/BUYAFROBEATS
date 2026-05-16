@@ -22,7 +22,7 @@ if (!Core::verify_csrf($_POST['csrf_token'] ?? '')) {
 
 $beat_id = $_POST['beat_id'] ?? null;
 $handle = $_POST['handle'] ?? '';
-$email = $_POST['email'] ?? '';
+$email = isset($_POST['email']) ? strtolower(trim($_POST['email'])) : '';
 $amount = $_POST['amount'] ?? 0;
 $honeypot = $_POST['website_url'] ?? ''; // Hidden field
 $ip = $_SERVER['REMOTE_ADDR'];

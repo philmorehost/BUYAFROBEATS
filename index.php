@@ -214,8 +214,14 @@ include __DIR__ . '/includes/header.php';
                 <div class="hint" id="min-bid-hint">Minimum bid: $0</div>
             </div>
             <div class="row2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-                <div class="field"><label>Your handle</label><input type="text" name="handle" placeholder="@yourname" required></div>
-                <div class="field"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required></div>
+                <div class="field">
+                    <label>Your handle</label>
+                    <input type="text" name="handle" placeholder="@yourname" value="<?php echo isset($_SESSION['username']) ? '@'.ltrim($_SESSION['username'], '@') : ''; ?>" <?php echo isset($_SESSION['username']) ? 'readonly' : ''; ?> required>
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="you@example.com" value="<?php echo $_SESSION['user_email'] ?? ''; ?>" <?php echo isset($_SESSION['user_email']) ? 'readonly' : ''; ?> required>
+                </div>
             </div>
             <div class="field">
                 <label id="captcha-label">Security: 0 + 0 = ?</label>
