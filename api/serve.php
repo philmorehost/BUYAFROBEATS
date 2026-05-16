@@ -66,7 +66,9 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-curl_setopt($ch, CURLOPT_BUFFERSIZE, 8192);
+curl_setopt($ch, CURLOPT_BUFFERSIZE, 16384); // Larger buffer for smoother streaming
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); // 10s connection timeout
+curl_setopt($ch, CURLOPT_TIMEOUT, 300); // 5 min max stream time
 
 // Forward response headers from Google
 curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) {
@@ -75,7 +77,8 @@ curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) {
     if (stripos($header_clean, 'Content-Type:') === 0 || 
         stripos($header_clean, 'Content-Length:') === 0 || 
         stripos($header_clean, 'Content-Range:') === 0 || 
-        stripos($header_clean, 'Accept-Ranges:') === 0) {
+        stripos($header_clean, 'Accept-Ranges:') === 0 ||
+        stripos($header_clean, 'HTTP/') === 0) {
         header($header_clean);
     }
     return $len;

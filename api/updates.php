@@ -23,13 +23,17 @@ while (true) {
     $db = $core->db();
     
     // Check for new activity
-    $stmt = $db->prepare("SELECT a.*, b.title, b.current_bid, b.ends_at, b.status as beat_status 
-                          FROM activity a 
-                          JOIN beats b ON a.beat_id = b.id 
-                          WHERE a.id > ? 
-                          ORDER BY a.id ASC LIMIT 10");
-    $stmt->execute([$last_activity_id]);
-    $activities = $stmt->fetchAll();
+    try {
+        $stmt = $db->prepare("SELECT a.*, b.title, b.current_bid, b.ends_at, b.status as beat_status 
+                              FROM activity a 
+                              JOIN beats b ON a.beat_id = b.id 
+                              WHERE a.id > ? 
+                              ORDER BY a.id ASC LIMIT 10");
+        $stmt->execute([$last_activity_id]);
+        $activities = $stmt->fetchAll();
+    } catch (\Exception $e) {
+        $activities = [];
+    }
 
     if (!empty($activities)) {
         foreach ($activities as $act) {
@@ -46,5 +50,5 @@ while (true) {
     ob_flush();
     flush();
 
-    sleep(2); // Poll every 2 seconds
+    sleep(3); // Increase interval slightly to reduce load
 }

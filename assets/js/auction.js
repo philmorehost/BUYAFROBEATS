@@ -237,33 +237,61 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // SSE Integration (using extensionless URL)
-    const evtSource = new EventSource('api/updates');
-    evtSource.addEventListener('activity', (e) => {
-        const act = JSON.parse(e.data);
-        const item = document.createElement('div');
-        item.className = 'activity-item';
-        item.innerHTML = `<span class="dot"></span><span><b>${act.user_handle}</b> ${act.message}</span>`;
-        if (activityList) {
-            activityList.prepend(item);
-            if (activityList.children.length > 8) activityList.lastChild.remove();
-        }
-        if (act.type === 'bid') {
-            playFeedbackSound('bid');
-            showToast(`${act.user_handle} bid $${act.amount} on a beat!`, 'ok');
-            const card = document.querySelector(`.card[data-id="${act.beat_id}"]`);
-            if (card) {
-                card.querySelector('.v.accent').innerText = `$${parseFloat(act.current_bid).toFixed(2)}`;
-                card.querySelector('.timer').setAttribute('data-ends', act.ends_at);
-                card.querySelector('.bidstats').innerHTML = `top <b>${act.user_handle}</b>`;
-                const lbItem = document.querySelector(`.lb-item[data-beat-id="${act.beat_id}"]`);
-                if (lbItem) {
-                    lbItem.querySelector('.amt').innerText = `$${parseFloat(act.current_bid).toLocaleString()}`;
-                    lbItem.classList.add('is-bumped');
-                    setTimeout(() => lbItem.classList.remove('is-bumped'), 1000);
+    let evtSource = null;
+    const startSSE = () => {
+        if (evtSource) evtSource.close();
+        evtSource = new EventSource('api/updates');
+        
+        evtSource.addEventListener('activity', (e) => {
+            const act = JSON.parse(e.data);
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `<span class="dot"></span><span><b>${act.user_handle}</b> ${act.message}</span>`;
+            if (activityList) {
+                activityList.prepend(item);
+                if (activityList.children.length > 8) activityList.lastChild.remove();
+            }
+            if (act.type === 'bid') {
+                playFeedbackSound('bid');
+                showToast(`${act.user_handle} bid $${act.amount} on a beat!`, 'ok');
+                const card = document.querySelector(`.card[data-id="${act.beat_id}"]`);
+                if (card) {
+                    const priceEl = card.querySelector('.v.accent');
+                    if (priceEl) priceEl.innerText = `$${parseFloat(act.current_bid).toFixed(2)}`;
+                    
+                    const timerEl = card.querySelector('.timer');
+                    if (timerEl) timerEl.setAttribute('data-ends', act.ends_at);
+                    
+                    const stats = card.querySelector('.bidstats');
+                    if (stats) stats.innerHTML = `top <b>${act.user_handle}</b>`;
+
+                    // Update data-beat for the button
+                    const btn = card.querySelector('.open-bid');
+                    if (btn) {
+                        const beat = JSON.parse(btn.getAttribute('data-beat'));
+                        beat.current_bid = act.current_bid;
+                        beat.top_bidder = act.user_handle;
+                        beat.ends_at = act.ends_at;
+                        btn.setAttribute('data-beat', JSON.stringify(beat));
+                    }
+                    
+                    const lbItem = document.querySelector(`.lb-item[data-beat-id="${act.beat_id}"]`);
+                    if (lbItem) {
+                        lbItem.querySelector('.amt').innerText = `$${parseFloat(act.current_bid).toLocaleString()}`;
+                        lbItem.classList.add('is-bumped');
+                        setTimeout(() => lbItem.classList.remove('is-bumped'), 1000);
+                    }
                 }
             }
-        }
-    });
+        });
+
+        evtSource.onerror = () => {
+            console.warn("SSE Connection lost. Retrying in 10s...");
+            evtSource.close();
+            setTimeout(startSSE, 10000); // Wait 10s before retrying to avoid server spam
+        };
+    };
+    startSSE();
 
     // Toast Helper
     function showToast(msg, kind) {

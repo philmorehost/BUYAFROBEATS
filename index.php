@@ -100,7 +100,7 @@ include __DIR__ . '/includes/header.php';
                                 </svg>
                                 <span class="status <?php echo $status; ?>"><?php echo strtoupper($status); ?></span>
                                 <span class="label"><?php echo $beat['duration']; ?></span>
-                                <button class="play" aria-label="Play" data-sample="api/serve.php?id=<?php echo $beat['id']; ?>">
+                                <button class="play" aria-label="Play" data-sample="api/serve?id=<?php echo $beat['id']; ?>">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                                 </button>
                             </div>
@@ -131,7 +131,7 @@ include __DIR__ . '/includes/header.php';
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($beat['status'] === 'live'): ?>
-                                        <button class="btn btn-primary open-bid" data-beat="<?php echo htmlspecialchars(json_encode($beat)); ?>">Place bid</button>
+                                        <button class="btn btn-primary open-bid" data-id="<?php echo $beat['id']; ?>" data-beat="<?php echo htmlspecialchars(json_encode($beat)); ?>">Place bid</button>
                                     <?php else: ?>
                                         <button class="btn btn-primary" disabled>SOLD</button>
                                     <?php endif; ?>
