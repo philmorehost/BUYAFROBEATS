@@ -8,6 +8,9 @@ use BAF\GoogleDrive;
 $core = Core::get_instance();
 $id = $_GET['id'] ?? '';
 
+// Ensure no output buffering interferes with binary audio
+if (ob_get_level()) ob_end_clean();
+
 if (empty($id)) {
     header("HTTP/1.1 400 Bad Request");
     exit("Missing file ID");

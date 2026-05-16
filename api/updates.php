@@ -16,8 +16,9 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
 
-// Poll for changes
-while (true) {
+// Poll for changes - Limit execution time to 20 seconds to prevent worker exhaustion
+$start_time = time();
+while (time() - $start_time < 20) {
     if (connection_aborted()) break;
 
     $db = $core->db();
@@ -43,12 +44,13 @@ while (true) {
         }
     }
 
-    // Always push heartbeat/timestamp to keep connection alive and sync clocks
+    // Always push heartbeat to keep connection alive
     echo "event: sync\n";
     echo "data: " . json_encode(['server_time' => time()]) . "\n\n";
 
-    ob_flush();
+    if (ob_get_level() > 0) ob_flush();
     flush();
 
-    sleep(3); // Increase interval slightly to reduce load
+    sleep(3); 
 }
+// Browser will automatically reconnect after 20 seconds, releasing the PHP process in between.
