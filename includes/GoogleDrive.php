@@ -19,11 +19,15 @@ class GoogleDrive {
      * Converts a standard Google Drive share link to a direct download link.
      */
     public static function to_direct_link($url) {
-        if (preg_match('/[-\w]{25,}/', $url, $matches)) {
-            $id = $matches[0];
-            return "https://drive.google.com/uc?export=download&id=" . $id;
-        }
-        return $url;
+        $id = self::extract_id($url);
+        return $id ? self::get_download_link($id) : $url;
+    }
+
+    /**
+     * Returns a direct download link for a given File ID.
+     */
+    public static function get_download_link($id) {
+        return "https://drive.google.com/uc?export=download&id=" . $id;
     }
 
     /**
