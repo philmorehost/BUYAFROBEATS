@@ -71,13 +71,20 @@ $status = [
 
         /* Mobile Responsiveness */
         @media (max-width: 900px) {
-            .settings-layout { flex-direction: column; padding: 20px; gap: 20px; }
-            .settings-nav { width: 100%; position: sticky; top: 70px; background: var(--bg-white); z-index: 100; overflow-x: auto; display: flex; padding: 10px 0; border-bottom: 1px solid var(--line); }
-            .settings-nav a { flex-shrink: 0; white-space: nowrap; border-left: none; border-bottom: 2px solid transparent; }
+            .settings-layout { flex-direction: column; padding: 20px 16px; gap: 20px; overflow-x: hidden; width: 100%; }
+            .settings-nav { width: 100%; position: sticky; top: 60px; background: color-mix(in oklab, var(--bg) 95%, transparent); backdrop-filter: blur(10px); z-index: 90; overflow-x: auto; display: flex; padding: 8px 0; border-bottom: 1px solid var(--line); scrollbar-width: none; -ms-overflow-style: none; }
+            .settings-nav::-webkit-scrollbar { display: none; }
+            .settings-nav a { flex-shrink: 0; white-space: nowrap; border-left: none; border-bottom: 2px solid transparent; padding: 8px 12px; font-size: 12px; }
             .settings-nav a.active { border-left: none; border-bottom-color: var(--accent); background: transparent; }
-            .floating-save { right: 20px; width: 50px; height: 50px; }
-            .floating-save svg { width: 24px; height: 24px; }
-            .section { margin-bottom: 60px; }
+            .floating-save { right: 16px; bottom: 20px; top: auto; transform: none; width: 54px; height: 54px; }
+            .floating-save:hover { transform: scale(1.1); }
+            .floating-save svg { width: 22px; height: 22px; }
+            .section { margin-bottom: 48px; }
+            .section h2 { font-size: 20px; }
+            .status-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 480px) {
+            .status-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
