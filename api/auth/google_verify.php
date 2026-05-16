@@ -63,9 +63,10 @@ if (!$user) {
 }
 
 // Set session
+$is_admin = isset($user['is_admin']) ? (int)$user['is_admin'] : 0;
 $_SESSION['user_id'] = $user_id;
 $_SESSION['user_email'] = $email;
 $_SESSION['user_handle'] = $user_handle;
-$_SESSION['is_admin'] = (int)$user['is_admin'];
+$_SESSION['is_admin'] = $is_admin;
 
 echo json_encode(['success' => true]);
