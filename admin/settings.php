@@ -240,17 +240,46 @@ $ads_txt_content = file_exists(__DIR__ . '/../ads.txt') ? file_get_contents(__DI
             
             <div id="storage" class="tab-content">
                 <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--accent);">Google Drive API</h3>
+                
+                <?php 
+                $has_creds = !empty($core->setting('google_drive_client_id')) && !empty($core->setting('google_drive_client_secret'));
+                $has_token = !empty($core->setting('google_drive_refresh_token'));
+                ?>
+
+                <div style="background: var(--bg-3); padding: 16px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: <?php echo $has_token ? 'var(--ok)' : 'var(--ink-mute)'; ?>; display: flex; align-items: center; justify-content: center; color: #000;">
+                        <?php if ($has_token): ?>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <?php else: ?>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                        <?php endif; ?>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 14px;"><?php echo $has_token ? 'Google Drive Connected' : 'Google Drive Not Connected'; ?></div>
+                        <div style="font-size: 11px; color: var(--ink-dim);">
+                            <?php echo $has_token ? 'The system has permission to manage auction files.' : 'Authorize the system to upload files to your Google Drive.'; ?>
+                        </div>
+                    </div>
+                    <?php if ($has_creds): ?>
+                        <a href="../api/google_drive_auth" class="btn <?php echo $has_token ? 'btn-ghost' : 'btn-primary'; ?>" style="font-size: 11px; padding: 8px 16px;">
+                            <?php echo $has_token ? 'Re-connect Account' : 'Connect Account →'; ?>
+                        </a>
+                    <?php else: ?>
+                        <span style="font-size: 11px; color: var(--danger);">Enter Client ID/Secret first</span>
+                    <?php endif; ?>
+                </div>
+
                 <div class="field">
                     <label>Drive Client ID</label>
-                    <input type="text" name="google_drive_client_id" value="<?php echo Core::escape($core->setting('google_drive_client_id')); ?>">
+                    <input type="text" name="google_drive_client_id" value="<?php echo Core::escape($core->setting('google_drive_client_id')); ?>" placeholder="Enter ID to enable Connect button">
                 </div>
                 <div class="field">
                     <label>Drive Client Secret</label>
-                    <input type="password" name="google_drive_client_secret" value="<?php echo Core::escape($core->setting('google_drive_client_secret')); ?>">
+                    <input type="password" name="google_drive_client_secret" value="<?php echo Core::escape($core->setting('google_drive_client_secret')); ?>" placeholder="Enter Secret to enable Connect button">
                 </div>
                 <div class="field">
-                    <label>Refresh Token</label>
-                    <input type="password" name="google_drive_refresh_token" value="<?php echo Core::escape($core->setting('google_drive_refresh_token')); ?>">
+                    <label>Refresh Token (Auto-filled after connection)</label>
+                    <input type="password" name="google_drive_refresh_token" value="<?php echo Core::escape($core->setting('google_drive_refresh_token')); ?>" readonly style="background: var(--bg-3);">
                 </div>
                 <div class="field">
                     <label>Parent Folder ID (Root for auctions)</label>
