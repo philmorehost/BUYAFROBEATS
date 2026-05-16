@@ -12,6 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $is_admin = $core->is_admin();
+$auction = new Auction($core);
 $beats = $is_admin ? $auction->get_live_beats() : [];
 
 // Pre-fetch bid counts to avoid N+1 queries
