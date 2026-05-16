@@ -27,6 +27,7 @@ $status = [
     <title>Studio Settings — <?php echo Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <meta name="csrf-token" content="<?php echo Core::csrf_token(); ?>">
     <style>
         :root { --sidebar-w: 220px; }
         .settings-layout { display: flex; gap: 40px; align-items: flex-start; max-width: 1000px; margin: 0 auto; padding: 40px 20px; }
@@ -353,6 +354,8 @@ $status = [
         });
     });
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
     async function save(el) {
         indicator.classList.add('is-saving');
         const key = el.getAttribute('data-key');
@@ -362,6 +365,7 @@ $status = [
             const fd = new FormData();
             fd.append('key', key);
             fd.append('value', value);
+            fd.append('csrf_token', csrfToken);
 
             const res = await fetch('api/save_setting.php', {
                 method: 'POST',
@@ -372,9 +376,13 @@ $status = [
             if (data.success) {
                 el.style.borderColor = 'var(--ok)';
                 setTimeout(() => el.style.borderColor = '', 1000);
+            } else {
+                showToast('Error: ' + (data.error || 'Failed to save'));
+                el.style.borderColor = 'var(--ink-mute)';
             }
         } catch (err) {
             console.error(err);
+            showToast('Connection error');
         } finally {
             indicator.classList.remove('is-saving');
         }
@@ -394,19 +402,22 @@ $status = [
         });
 
         try {
-            // We'll send them one by one but with a visible "syncing" state 
-            // OR ideally we would have a batch API. For now, let's optimize the loop.
-            const promises = Object.entries(settings).map(([key, value]) => {
-                const fd = new FormData();
-                fd.append('key', key);
-                fd.append('value', value);
-                return fetch('api/save_setting.php', { method: 'POST', body: fd });
-            });
+            const fd = new FormData();
+            fd.append('settings', JSON.stringify(settings));
+            fd.append('csrf_token', csrfToken);
 
-            await Promise.all(promises);
-            
-            saveLabel.classList.add('show');
-            setTimeout(() => saveLabel.classList.remove('show'), 2500);
+            const res = await fetch('api/save_setting.php', {
+                method: 'POST',
+                body: fd
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                saveLabel.classList.add('show');
+                setTimeout(() => saveLabel.classList.remove('show'), 2500);
+            } else {
+                alert('Error: ' + (data.error || 'Failed to save settings'));
+            }
         } catch (err) {
             console.error(err);
             alert('Failed to save some settings. Please check your connection.');
