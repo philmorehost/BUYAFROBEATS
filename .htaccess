@@ -1,7 +1,11 @@
-# BEATZAZA Security Hardening
 Options -Indexes
+# Hide .php extension
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
 
-# Protect sensitive files
+# Prevent sensitive files
 <FilesMatch "(\.sql|\.bak|\.bak|\.log|config\.php|composer\..*|package.*\.json)$">
     Order deny,allow
     Deny from all

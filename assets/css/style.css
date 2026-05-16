@@ -65,7 +65,7 @@ html, body {
 .hero { padding: 40px 0 60px; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
 .hero .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 .hero h1 { font-size: 48px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 16px; line-height: 1.1; }
-.hero h1 em { font-style: italic; color: var(--ink-mute); }
+.hero h1 em { font-style: italic; color: var(--accent); }
 .hero p { color: var(--ink-dim); font-size: 16px; max-width: 60ch; line-height: 1.6; margin: 0 0 32px; }
 
 .hero-stats { display: flex; gap: 12px; }
@@ -143,7 +143,10 @@ html, body {
 .field input:focus { border-color: var(--accent); }
 
 /* Footer */
-.site-f { background: var(--bg-2); border-top: 1px solid var(--line); padding: 60px 0 30px; margin-top: 80px; }
+.site-footer { 
+    background: var(--bg-2); border-top: 1px solid var(--line); 
+    padding: 60px 0 30px; margin-top: 80px; 
+}
 .f-inner { max-width: 1400px; margin: 0 auto; padding: 0 32px; }
 .f-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 2fr; gap: 40px; margin-bottom: 40px; }
 .f-logo { font-size: 20px; font-weight: 800; margin-bottom: 16px; }
@@ -151,10 +154,15 @@ html, body {
 .f-heading { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; }
 .f-links { list-style: none; padding: 0; margin: 0; }
 .f-links li { margin-bottom: 10px; }
-.f-links a { color: var(--ink-dim); text-decoration: none; font-size: 14px; transition: color 0.2s; }
-.f-links a:hover { color: var(--ink); }
-.f-news p { font-size: 13px; color: var(--ink-mute); margin-bottom: 16px; }
-.f-bottom { border-top: 1px solid var(--line); padding-top: 24px; display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-mute); }
+.f-links a, .f-links button { 
+    color: var(--ink-dim); text-decoration: none; font-size: 14px; 
+    transition: color 0.2s; background: none; border: 0; padding: 0; cursor: pointer; font: inherit;
+}
+.f-links a:hover, .f-links button:hover { color: var(--ink); }
+.f-bottom { 
+    border-top: 1px solid var(--line); padding-top: 24px; 
+    display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-mute); 
+}
 
 @keyframes eq { to { height: 100%; } }
 
