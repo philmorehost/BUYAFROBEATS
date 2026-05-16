@@ -52,6 +52,12 @@ if (isset($_GET['export']) && $is_admin) {
         .stat-card .k { font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.08em; }
         .stat-card .v { font-size: 24px; font-weight: 600; margin-top: 4px; }
         .stat-card .v.accent { color: var(--accent); }
+
+        @media (max-width: 700px) {
+            .banner-welcome { flex-direction: column; align-items: flex-start !important; gap: 16px !important; }
+            .admin-header-row { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+            .admin-header-row h2 { font-size: 24px !important; }
+        }
     </style>
 </head>
 <body>
@@ -74,11 +80,11 @@ if (isset($_GET['export']) && $is_admin) {
 
 <div class="page">
     <!-- Friendly Download Policy Notice -->
-    <div style="background: color-mix(in oklab, var(--accent) 5%, var(--bg-2)); border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-bottom: 32px; display: flex; align-items: center; gap: 24px; animation: cardIn .4s ease both;">
-        <div style="width: 54px; height: 54px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+    <div class="banner-welcome" style="background: color-mix(in oklab, var(--accent) 5%, var(--bg-2)); border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-bottom: 32px; display: flex; align-items: center; gap: 24px; animation: cardIn .4s ease both;">
+        <div class="banner-icon" style="width: 54px; height: 54px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </div>
-        <div style="flex: 1;">
+        <div class="banner-text" style="flex: 1;">
             <h3 style="margin: 0 0 4px; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em;">Welcome to your Dashboard</h3>
             <p style="margin: 0; font-size: 15px; color: var(--ink-dim); line-height: 1.6;">
                 A friendly reminder: To protect the total exclusivity of our beats, all files are removed from our servers 24 hours after purchase.
@@ -90,7 +96,7 @@ if (isset($_GET['export']) && $is_admin) {
     <?php if ($is_admin): ?>
     <div class="admin-banner"><span style="width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block;"></span> Admin · Only you see this</div>
     
-    <div style="display:flex; align-items: center; justify-content:space-between; margin-bottom: 24px;">
+    <div class="admin-header-row" style="display:flex; align-items: center; justify-content:space-between; margin-bottom: 24px;">
         <h2 style="margin:0; font-size:28px; letter-spacing:-0.02em;">Studio Overview</h2>
         <a href="upload" class="btn btn-primary">+ Upload new beat</a>
     </div>
@@ -109,24 +115,26 @@ if (isset($_GET['export']) && $is_admin) {
             <p>Upload your next beat to open the next auction.</p>
         </div>
     <?php else: ?>
-        <table class="log-table" style="margin-bottom:32px;">
-            <thead><tr><th>Beat</th><th>Current Bid</th><th>Bids</th><th>Top Bidder</th><th>Time Left</th><th>Actions</th></tr></thead>
-            <tbody>
-                <?php foreach ($beats as $b): ?>
-                    <tr>
-                        <td><b><?php echo Core::escape($b['title']); ?></b> <span class="mono" style="color:var(--ink-mute); font-size:11px">· <?php echo $b['genre']; ?></span></td>
-                        <td class="mono">$<?php echo number_format($b['current_bid'], 2); ?></td>
-                        <td class="mono"><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$b['id']}")->fetchColumn(); ?></td>
-                        <td class="mono" style="font-size:12px"><?php echo $b['top_bidder'] ?: '—'; ?></td>
-                        <td class="mono" style="font-size:12px"><?php echo $b['ends_at'] ?: 'Not started'; ?></td>
-                        <td style="text-align:right">
-                            <a href="edit?id=<?php echo $b['id']; ?>" class="btn" style="font-size:10px; padding: 4px 8px; border: 1px solid var(--line);">Edit</a>
-                            <a href="delete?id=<?php echo $b['id']; ?>" class="btn" style="font-size:10px; padding: 4px 8px; border: 1px solid var(--danger); color:var(--danger);" onclick="return confirm('Delete this beat and all associated files? This cannot be undone.')">Delete</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="table-wrap" style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 32px;">
+            <table class="log-table" style="width: 100%; min-width: 800px;">
+                <thead><tr><th>Beat</th><th>Current Bid</th><th>Bids</th><th>Top Bidder</th><th>Time Left</th><th>Actions</th></tr></thead>
+                <tbody>
+                    <?php foreach ($beats as $b): ?>
+                        <tr>
+                            <td><b><?php echo Core::escape($b['title']); ?></b> <span class="mono" style="color:var(--ink-mute); font-size:11px">· <?php echo $b['genre']; ?></span></td>
+                            <td class="mono">$<?php echo number_format($b['current_bid'], 2); ?></td>
+                            <td class="mono"><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$b['id']}")->fetchColumn(); ?></td>
+                            <td class="mono" style="font-size:12px"><?php echo $b['top_bidder'] ?: '—'; ?></td>
+                            <td class="mono" style="font-size:12px"><?php echo $b['ends_at'] ?: 'Not started'; ?></td>
+                            <td style="text-align:right">
+                                <a href="edit?id=<?php echo $b['id']; ?>" class="btn" style="font-size:10px; padding: 4px 8px; border: 1px solid var(--line);">Edit</a>
+                                <a href="delete?id=<?php echo $b['id']; ?>" class="btn" style="font-size:10px; padding: 4px 8px; border: 1px solid var(--danger); color:var(--danger);" onclick="return confirm('Delete this beat and all associated files? This cannot be undone.')">Delete</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     <?php endif; ?>
 
     <?php endif; // End Admin Check ?>
@@ -155,27 +163,29 @@ if (isset($_GET['export']) && $is_admin) {
             <p>When an auction ends, the delivery record lands here.</p>
         </div>
     <?php else: ?>
-        <table class="log-table">
-            <thead><tr><th>Delivery ID</th><th>Beat</th><th>Winner</th><th>Price</th><th>Date</th></tr></thead>
-            <tbody>
-                <?php foreach ($sales as $s): ?>
-                    <tr>
-                        <td class="mono" style="color:var(--ink-mute)"><?php echo $s['delivery_id']; ?></td>
-                        <td><b><?php echo Core::escape($s['beat_title']); ?></b></td>
-                        <td class="mono" style="font-size:12px"><?php echo $s['winner_handle']; ?><br><span style="color:var(--ink-mute); font-size:11px"><?php echo $s['winner_email']; ?></span></td>
-                        <td class="mono" style="color:var(--accent)">$<?php echo number_format($s['price'], 2); ?></td>
-                        <td class="mono" style="font-size:12px; color:var(--ink-dim)"><?php echo date('M d · H:i', strtotime($s['sold_at'])); ?></td>
-                        <td style="text-align:right">
-                            <?php if ($s['payment_status'] === 'completed'): ?>
-                                <a href="../api/download?token=<?php echo $s['download_token']; ?>" class="btn btn-primary" style="font-size:10px; padding: 4px 12px;">Download HQ</a>
-                            <?php else: ?>
-                                <a href="../pay?id=<?php echo $s['delivery_id']; ?>" class="btn" style="font-size:10px; padding: 4px 12px;">Pay Now</a>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="table-wrap" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table class="log-table" style="width: 100%; min-width: 800px;">
+                <thead><tr><th>Delivery ID</th><th>Beat</th><th>Winner</th><th>Price</th><th>Date</th><th style="text-align:right">Actions</th></tr></thead>
+                <tbody>
+                    <?php foreach ($sales as $s): ?>
+                        <tr>
+                            <td class="mono" style="color:var(--ink-mute)"><?php echo $s['delivery_id']; ?></td>
+                            <td><b><?php echo Core::escape($s['beat_title']); ?></b></td>
+                            <td class="mono" style="font-size:12px"><?php echo $s['winner_handle']; ?><br><span style="color:var(--ink-mute); font-size:11px"><?php echo $s['winner_email']; ?></span></td>
+                            <td class="mono" style="color:var(--accent)">$<?php echo number_format($s['price'], 2); ?></td>
+                            <td class="mono" style="font-size:12px; color:var(--ink-dim)"><?php echo date('M d · H:i', strtotime($s['sold_at'])); ?></td>
+                            <td style="text-align:right">
+                                <?php if ($s['payment_status'] === 'completed'): ?>
+                                    <a href="../api/download?token=<?php echo $s['download_token']; ?>" class="btn btn-primary" style="font-size:10px; padding: 4px 12px;">Download HQ</a>
+                                <?php else: ?>
+                                    <a href="../pay?id=<?php echo $s['delivery_id']; ?>" class="btn" style="font-size:10px; padding: 4px 12px;">Pay Now</a>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     <?php endif; ?>
 </div>
 
