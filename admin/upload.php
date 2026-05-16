@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=3.0">
 </head>
-<body>
+<body class="admin-page">
     <header class="topbar">
         <div class="topbar-inner">
             <a href="index.php" class="logo">

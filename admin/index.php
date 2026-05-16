@@ -60,7 +60,7 @@ $current_tab = 'studio';
         .badge.expired { background: color-mix(in oklab, var(--danger) 15%, transparent); color: var(--danger); border: 1px solid color-mix(in oklab, var(--danger) 30%, var(--line)); }
     </style>
 </head>
-<body>
+<body class="admin-page">
     <header class="topbar">
         <div class="topbar-inner">
             <a href="../index.php" class="logo">

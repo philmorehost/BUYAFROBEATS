@@ -107,6 +107,12 @@ class Auction {
         }
     }
 
+    public function get_bids($beat_id) {
+        $stmt = $this->core->db()->prepare("SELECT * FROM bids WHERE beat_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$beat_id]);
+        return $stmt->fetchAll();
+    }
+
     /**
      * Builds the Payment Cascade chain for a finished auction.
      * Takes each unique bidder's best bid, sorted high -> low.

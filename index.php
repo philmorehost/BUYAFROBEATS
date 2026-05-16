@@ -21,14 +21,14 @@ include __DIR__ . '/includes/header.php';
     <section class="hero">
         <div class="eyebrow mono">
             <span class="live-dot"></span>
-            LIVE EXCLUSIVE AUCTIONS
+            LIVE NOW · BIDDING OPEN
         </div>
-        <h1>Own the <em>Master</em>.<br>Rule the <em>Charts</em>.</h1>
-        <p>Premium one-of-one Afrobeats instrumentals. Bid, win, and the beat vanishes from the market forever. You own the full commercial rights.</p>
+        <h1>One-of-one beats.<br><em>Highest bid wins.</em></h1>
+        <p>Every beat here is mine. Bid, outbid, lose sleep. When the 30-minute timer hits zero, the file ships to the winner's inbox and the beat <em style="color:var(--accent); font-style:normal;">vanishes</em> from this site forever.</p>
         
         <div class="hero-stats">
             <div class="stat-pill">
-                <span class="k">Live</span>
+                <span class="k">Open</span>
                 <span class="v accent"><?php echo count($beats); ?></span>
             </div>
             <div class="stat-pill">
@@ -36,8 +36,12 @@ include __DIR__ . '/includes/header.php';
                 <span class="v">124</span>
             </div>
             <div class="stat-pill">
-                <span class="k">Settled</span>
-                <span class="v">$42,800</span>
+                <span class="k">Sold</span>
+                <span class="v">7</span>
+            </div>
+            <div class="stat-pill">
+                <span class="k">Timer</span>
+                <span class="v">30:00 from first bid</span>
             </div>
         </div>
     </section>
@@ -45,9 +49,9 @@ include __DIR__ . '/includes/header.php';
     <div class="layout">
         <div class="main-content">
             <div class="filter-row">
-                <div class="search">
+                <div class="search" style="margin-bottom: 20px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-mute)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    <input type="text" id="search-input" placeholder="Search title, genre, bpm..." value="<?php echo Core::escape($search); ?>" onkeyup="if(event.key==='Enter') window.location.href='?search='+encodeURIComponent(this.value)">
+                    <input type="text" id="search-input" placeholder="Search title or genre..." value="<?php echo Core::escape($search); ?>" onkeyup="if(event.key==='Enter') window.location.href='?search='+encodeURIComponent(this.value)">
                 </div>
                 <div class="genres">
                     <a href="?genre=All" class="chip <?php echo $genre === 'All' ? 'is-active' : ''; ?>">All</a>
@@ -59,9 +63,9 @@ include __DIR__ . '/includes/header.php';
 
             <div class="grid" id="auction-grid">
                 <?php if (empty($beats)): ?>
-                    <div class="empty" style="grid-column: 1/-1;">
-                        <h3>No beats found</h3>
-                        <p>Check back soon for the next drop.</p>
+                    <div class="empty" style="grid-column: 1/-1; text-align: center; padding: 100px 0; border: 1px dashed var(--line); border-radius: 20px;">
+                        <h3 class="ink-bright">No open auctions</h3>
+                        <p class="ink-dim">Check back soon — new drops come fast.</p>
                     </div>
                 <?php else: ?>
                     <?php foreach ($beats as $beat): 
@@ -76,17 +80,17 @@ include __DIR__ . '/includes/header.php';
                                 <div class="label mono"><?php echo Core::escape($beat['genre']); ?> · <?php echo $beat['bpm']; ?> BPM</div>
                             </div>
                             <div class="card-content">
-                                <div class="card-title"><?php echo Core::escape($beat['title']); ?></div>
+                                <div class="card-title ink-bright"><?php echo Core::escape($beat['title']); ?></div>
                                 <div class="card-meta mono"><?php echo Core::escape($beat['key_sig']); ?> · <?php echo $beat['duration']; ?></div>
                                 
                                 <div class="auction-info">
                                     <div class="auction-stat">
                                         <div class="label">Top Bid</div>
-                                        <div class="value"><?php echo $beat['top_bidder'] ? '$' . number_format($beat['current_bid'], 0) : '—'; ?></div>
+                                        <div class="value accent ink-bright"><?php echo $beat['top_bidder'] ? '$' . number_format($beat['current_bid'], 0) : '—'; ?></div>
                                     </div>
                                     <div class="auction-stat">
                                         <div class="label">Time Left</div>
-                                        <div class="value timer" data-ends="<?php echo $ends_at_ts; ?>">--:--</div>
+                                        <div class="value timer ink-bright" data-ends="<?php echo $ends_at_ts; ?>">--:--</div>
                                     </div>
                                 </div>
 
@@ -103,28 +107,47 @@ include __DIR__ . '/includes/header.php';
         </div>
 
         <aside class="sidebar">
-            <div class="sidebar-box">
-                <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Leaderboard</h3>
+            <div class="leaderboard">
+                <div class="lb-head">
+                    <h3><span class="live-dot" style="background:var(--ok)"></span> Leaderboard</h3>
+                    <span class="hint">TOP 6 · LIVE</span>
+                </div>
+                
                 <div class="lb-list">
                     <?php if (empty($leaderboard)): ?>
-                        <div class="lb-empty mono" style="font-size: 11px; color: var(--ink-mute); padding: 20px 0;">No active leaders</div>
+                        <div class="lb-empty mono" style="font-size: 12px; color: var(--ink-mute); padding: 40px 0; text-align: center;">No live auctions right now.</div>
                     <?php endif; ?>
                     <?php foreach ($leaderboard as $index => $lb): ?>
                         <div class="lb-item">
-                            <div class="lb-rank">#<?php echo $index + 1; ?></div>
+                            <div class="lb-rank">0<?php echo $index + 1; ?></div>
+                            <div class="lb-cover" style="background: var(--bg-3) url('api/serve.php?beat_id=<?php echo $lb['id']; ?>&type=cover') center/cover;"></div>
                             <div class="lb-info">
-                                <div class="lb-name"><?php echo Core::escape($lb['title']); ?></div>
-                                <div class="lb-bid">$<?php echo number_format($lb['current_bid'], 0); ?></div>
+                                <div class="lb-title ink-bright"><?php echo Core::escape($lb['title']); ?></div>
+                                <div class="lb-sub"><?php echo count($auction->get_bids($lb['id'])); ?> bids</div>
+                            </div>
+                            <div class="lb-bid">
+                                <div class="amt">$<?php echo number_format($lb['current_bid'], 0); ?></div>
+                                <div class="lb-sub timer" data-ends="<?php echo strtotime($lb['ends_at']); ?>" style="text-align: right;">--:--</div>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
 
-                <div class="lb-activity" style="margin-top: 32px;">
-                    <h4 class="mono" style="font-size: 10px; color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;">Recent Activity</h4>
+                <div class="lb-activity" style="border-top: 1px solid var(--line); padding-top: 24px;">
+                    <h4>Live Activity</h4>
                     <div id="activity-feed">
                         <!-- Populated by SSE -->
                     </div>
+                </div>
+
+                <div class="info-block" style="background: rgba(255,159,0,0.05); border-color: rgba(255,159,0,0.2);">
+                    <h4>If you win</h4>
+                    <ul>
+                        <li><b>It's yours, 100%.</b> Full ownership — release, sync, sample, sell, no royalties.</li>
+                        <li>Credit <b>"Produced by OBV"</b> on every platform. One line, that's it.</li>
+                        <li><b>7 days to download.</b> Files wipe from our servers after a week.</li>
+                        <li>No credit = breach of contract.</li>
+                    </ul>
                 </div>
             </div>
         </aside>

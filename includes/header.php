@@ -45,15 +45,19 @@ $core = Core::get_instance();
             </a>
             
             <nav class="tabs">
-                <a href="<?php echo $core->get_site_url(); ?>" class="tab <?php echo (!isset($current_tab) || $current_tab === 'market') ? 'is-active' : ''; ?>">Market</a>
+                <a href="<?php echo $core->get_site_url(); ?>" class="tab <?php echo (!isset($current_tab) || $current_tab === 'market') ? 'is-active' : ''; ?>">Auctions</a>
+                <?php if ($core->is_admin()): ?>
+                    <a href="<?php echo $core->get_site_url(); ?>/admin" class="tab <?php echo ($current_tab === 'studio') ? 'is-active' : ''; ?>">My Studio</a>
+                    <a href="<?php echo $core->get_site_url(); ?>/admin/settings" class="tab <?php echo ($current_tab === 'settings') ? 'is-active' : ''; ?>">Settings</a>
+                <?php endif; ?>
                 <a href="#" class="tab" onclick="openPolicy('faq'); return false;">FAQ</a>
             </nav>
 
             <div class="spacer"></div>
 
             <div class="counter mono">
-                <span class="live-dot"></span>
-                <b>12</b> live auctions
+                <span class="live-dot" style="background:var(--ok)"></span>
+                <b><?php echo count($core->db()->query("SELECT id FROM beats WHERE status = 'live'")->fetchAll()); ?></b> Live · <b>0</b> total bids
             </div>
 
             <?php if (isset($_SESSION['user_id'])): ?>

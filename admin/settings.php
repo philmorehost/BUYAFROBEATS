@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .help-text code { background: var(--bg-3); padding: 2px 5px; border-radius: 4px; color: var(--ink); }
     </style>
 </head>
-<body>
+<body class="admin-page">
     <header class="topbar">
         <div class="topbar-inner">
             <a href="index.php" class="logo">

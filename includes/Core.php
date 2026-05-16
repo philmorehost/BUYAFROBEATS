@@ -110,7 +110,7 @@ class Core {
 
     // Security Helpers
     public static function escape($str) {
-        return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
+        return htmlspecialchars((string)($str ?? ''), ENT_QUOTES, 'UTF-8');
     }
 
     public static function csrf_token() {
