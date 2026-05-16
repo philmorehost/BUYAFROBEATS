@@ -56,6 +56,9 @@ $queries = [
     // Indexes for performance
     "ALTER TABLE `beats` ADD INDEX IF NOT EXISTS `idx_status_genre` (`status`, `genre`);",
     "ALTER TABLE `beats` ADD INDEX IF NOT EXISTS `idx_ends_at` (`ends_at`);",
+    "ALTER TABLE `bids` ADD INDEX IF NOT EXISTS `idx_beat_amount` (`beat_id`, `amount`);",
+    "ALTER TABLE `activity` ADD INDEX IF NOT EXISTS `idx_created` (`created_at`);",
+    "ALTER TABLE `sales` ADD INDEX IF NOT EXISTS `idx_payment` (`payment_status`);",
     
     // Sales and Activity
     "CREATE TABLE IF NOT EXISTS `activity` (
@@ -68,7 +71,9 @@ $queries = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 
     "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `plisio_invoice_id` VARCHAR(100) AFTER `payment_status`;",
-    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `plisio_invoice_url` VARCHAR(500) AFTER `plisio_invoice_id`;"
+    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `plisio_invoice_url` VARCHAR(500) AFTER `plisio_invoice_id`;",
+    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `cascade_chain` TEXT AFTER `plisio_invoice_url`;",
+    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `current_claimant_index` INT DEFAULT 0 AFTER `cascade_chain`;"
 ];
 
 echo "<h2>Database Update Tool</h2>";
