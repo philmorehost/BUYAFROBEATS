@@ -68,7 +68,9 @@ $queries = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 
     "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `plisio_invoice_id` VARCHAR(100) AFTER `payment_status`;",
-    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `plisio_invoice_url` VARCHAR(500) AFTER `plisio_invoice_id`;"
+    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `plisio_invoice_url` VARCHAR(500) AFTER `plisio_invoice_id`;",
+    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `cascade_chain` TEXT AFTER `plisio_invoice_url`;",
+    "ALTER TABLE `sales` ADD COLUMN IF NOT EXISTS `current_claimant_index` INT DEFAULT 0 AFTER `cascade_chain`;"
 ];
 
 echo "<h2>Database Update Tool</h2>";

@@ -45,9 +45,9 @@ if (!isset($core) || !($core instanceof Core)) {
                 <div class="f-nav-group">
                     <h4 class="f-heading">Company</h4>
                     <ul class="f-links">
-                        <li><a href="faqs.php">FAQs</a></li>
-                        <li><a href="privacy.php">Privacy Policy</a></li>
-                        <li><a href="terms.php">Terms & Conditions</a></li>
+                        <li><a href="javascript:void(0)" onclick="openLegalModal('faq')">FAQs</a></li>
+                        <li><a href="javascript:void(0)" onclick="openLegalModal('privacy')">Privacy Policy</a></li>
+                        <li><a href="javascript:void(0)" onclick="openLegalModal('terms')">Terms & Conditions</a></li>
                         <?php 
                         try {
                             if ($core->db()) {
@@ -84,11 +84,13 @@ if (!isset($core) || !($core instanceof Core)) {
         <div class="f-bottom">
             <span>&copy; <?php echo date('Y'); ?> <?php echo \BAF\Core::escape($core->setting('site_title', 'BUYAFROBEATS')); ?>. All rights reserved.</span>
             <div class="f-legal-links">
-                <a href="privacy.php">Privacy</a> · <a href="terms.php">Terms</a>
+                <a href="javascript:void(0)" onclick="openLegalModal('privacy')">Privacy</a> · <a href="javascript:void(0)" onclick="openLegalModal('terms')">Terms</a>
             </div>
         </div>
     </div>
 </footer>
+
+<?php include __DIR__ . '/../components/legal_modal.php'; ?>
 
 <script>
     // Newsletter Logic

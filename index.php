@@ -167,13 +167,23 @@ include __DIR__ . '/includes/header.php';
 
                 <div class="lb-activity">
                     <h4>Live activity</h4>
-                    <div id="activity-list">
+                    <div id="activity-list" style="margin-bottom: 24px;">
                         <?php foreach ($activity as $act): ?>
                             <div class="activity-item fade-in">
                                 <span class="dot"></span>
-                                <span><b><?php echo Core::escape($act['user_handle']); ?></b> <?php echo Core::escape($act['message']); ?></span>
+                                <span><b>@<?php echo Core::escape($act['user_handle']); ?></b> <?php echo Core::escape($act['message']); ?></span>
                             </div>
                         <?php endforeach; ?>
+                    </div>
+
+                    <div class="house-rules" style="background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px; padding: 16px;">
+                        <h5 style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-mute); margin-bottom: 12px;">House Rules</h5>
+                        <ul style="margin: 0; padding: 0; list-style: none; font-size: 11px; color: var(--ink-dim); line-height: 1.5;">
+                            <li style="margin-bottom: 8px;"><b>1. Ownership:</b> Winner receives 100% rights, master WAV, stems, and signed license.</li>
+                            <li style="margin-bottom: 8px;"><b>2. Credit:</b> Every release must include the "Produced by OBV" credit in metadata.</li>
+                            <li style="margin-bottom: 8px;"><b>3. Window:</b> Files must be downloaded within 7 days of purchase confirmation.</li>
+                            <li><b>4. Breach:</b> Failure to credit is a material breach and may result in license revocation.</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -184,18 +194,24 @@ include __DIR__ . '/includes/header.php';
 <!-- Bid Modal -->
 <div id="bid-modal" class="backdrop">
     <div class="modal">
-        <h3>Place a bid</h3>
-        <p class="lead">Highest bid at zero wins. Timer extends by 2 minutes if a bid lands in the final 2.</p>
-        <div id="modal-beat-info" class="line-item" style="display: flex; gap: 14px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 18px; background: var(--bg);">
-            <!-- Dynamic content -->
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin:0">Place a bid</h3>
+            <div id="modal-beat-title" style="font-family:'JetBrains Mono'; font-size:12px; color:var(--accent)"></div>
         </div>
+        <p class="lead" style="font-size:12px; margin-bottom:16px;">Highest bid at zero wins. Timer extends by 2 mins if a bid lands late.</p>
+        
+        <div id="bid-history-container" style="margin-bottom: 18px; max-height: 120px; overflow-y: auto; background: var(--bg-2); border-radius: 12px; padding: 12px; display:none;">
+            <div style="font-size: 9px; color: var(--ink-mute); margin-bottom: 8px; text-transform: uppercase; font-weight:700;">Recent Bids</div>
+            <div id="bid-history-list" style="font-size:12px;"></div>
+        </div>
+
         <form id="bid-form">
             <input type="hidden" name="beat_id" id="modal-beat-id">
             <input type="hidden" name="csrf_token" value="<?php echo Core::csrf_token(); ?>">
-            <input type="text" name="website_url" style="display:none !important" tabindex="-1" autocomplete="off">
             <div class="field">
                 <label>Your bid (USD)</label>
                 <input type="number" name="amount" id="modal-amount" step="5" required>
+                <div class="hint" id="min-bid-hint">Minimum bid: $0</div>
             </div>
             <div class="row2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 <div class="field"><label>Your handle</label><input type="text" name="handle" placeholder="@yourname" required></div>
@@ -276,25 +292,52 @@ include __DIR__ . '/includes/header.php';
         bidForm.dataset.ans = a + b;
     }
 
-    document.addEventListener('click', (e) => {
-        // Find if we clicked an open-bid button OR a leaderboard item
+    document.addEventListener('click', async (e) => {
         const lbItem = e.target.closest('.lb-item');
         const openBidBtn = e.target.classList.contains('open-bid') ? e.target : e.target.closest('.open-bid');
-        
         const trigger = openBidBtn || lbItem;
 
-        if (trigger && (trigger.classList.contains('open-bid') || trigger.classList.contains('lb-item'))) {
-            // If it's a leaderboard item, we need to find the corresponding beat data
-            // For now, we'll trigger the bid modal using the data attributes
-            const btnData = trigger.classList.contains('open-bid') ? trigger.dataset : 
-                           document.querySelector(`.open-bid[data-id="${trigger.dataset.beatId}"]`)?.dataset;
+        if (trigger) {
+            let data = null;
+            if (trigger.classList.contains('open-bid')) {
+                data = JSON.parse(trigger.dataset.beat);
+            } else if (trigger.classList.contains('lb-item')) {
+                const btn = document.querySelector(`.open-bid[data-id="${trigger.dataset.beatId}"]`);
+                if (btn) data = JSON.parse(btn.dataset.beat);
+            }
 
-            if (btnData) {
-                document.getElementById('modal-beat-id').value = btnData.id;
-                document.getElementById('modal-amount').value = btnData.min;
-                document.getElementById('modal-amount').min = btnData.min;
-                document.getElementById('modal-beat-info').innerHTML = `<strong>${btnData.title}</strong> <span class="spacer"></span> <span class="mono">Min: $${btnData.min}</span>`;
+            if (data) {
+                document.getElementById('modal-beat-id').value = data.id;
+                document.getElementById('modal-beat-title').innerText = data.title;
                 
+                const minBid = Number(data.current_bid) + 5;
+                document.getElementById('modal-amount').value = minBid;
+                document.getElementById('modal-amount').min = minBid;
+                document.getElementById('min-bid-hint').innerText = `Minimum bid: $${minBid}`;
+                
+                // Fetch History
+                const historyList = document.getElementById('bid-history-list');
+                const historyContainer = document.getElementById('bid-history-container');
+                historyList.innerHTML = 'Loading history...';
+                historyContainer.style.display = 'block';
+                
+                try {
+                    const hRes = await fetch(`api/bid_history.php?id=${data.id}`);
+                    const hData = await hRes.json();
+                    if (hData.bids && hData.bids.length > 0) {
+                        historyList.innerHTML = hData.bids.map(b => `
+                            <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(0,0,0,0.05)">
+                                <span>${b.bidder_handle}</span>
+                                <span style="font-weight:700">$${Number(b.amount).toLocaleString()}</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        historyList.innerHTML = '<div style="color:var(--ink-mute)">No bids yet. Start the auction!</div>';
+                    }
+                } catch (err) {
+                    historyList.innerHTML = 'Failed to load history.';
+                }
+
                 refreshCaptcha();
                 modal.classList.add('show');
             }

@@ -41,8 +41,9 @@ if ($type === 'stems') {
     $local_path = $sale['stems_path'] ? __DIR__ . '/../uploads/audio/' . $sale['stems_path'] : null;
     $filename .= '_Stems.zip';
 } elseif ($type === 'license') {
-    $target_url = $sale['license_url'];
-    $filename .= '_License.pdf';
+    // Redirect to the dynamic signed license viewer
+    header("Location: ../license?id=" . $sale['delivery_id'] . "&token=" . $sale['download_token']);
+    exit;
 } else {
     $target_url = $sale['audio_url'];
     $local_path = $sale['audio_path'] ? __DIR__ . '/../uploads/audio/' . $sale['audio_path'] : null;

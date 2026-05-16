@@ -104,52 +104,70 @@ class Auction {
 
     public function cleanup_sold_beats() {
         $db = $this->core->db();
-        // 1. Process PAID beats (Remove from site after 24 hours)
-        $stmt = $db->prepare("SELECT b.* FROM beats b 
+        
+        // 1. SITE REMOVAL (24 Hours after sale)
+        // Mark as 'expired' so it disappears from the live catalog
+        $stmt = $db->prepare("UPDATE beats b 
                               JOIN sales s ON b.id = s.beat_id 
+                              SET b.status = 'expired' 
                               WHERE b.status = 'sold' 
                               AND s.payment_status = 'completed' 
-                              AND b.ends_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+                              AND s.created_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
         $stmt->execute();
-        $paid_beats = $stmt->fetchAll();
 
-        foreach ($paid_beats as $beat) {
-            $db->beginTransaction();
-            try {
-                // Delete audio file from Drive if possible, or just mark as expired
-                $stmt = $db->prepare("UPDATE beats SET status = 'expired' WHERE id = ?");
-                $stmt->execute([$beat['id']]);
-                $db->commit();
-            } catch (\Exception $e) {
-                $db->rollBack();
-            }
-        }
+        // 2. DOWNLOAD REVOCATION (7 Days after sale)
+        // This would involve calling Drive API to revoke permissions, 
+        // but for now we mark the sale as 'archived' so download.php rejects it.
+        $stmt = $db->prepare("UPDATE sales SET payment_status = 'archived' 
+                              WHERE payment_status = 'completed' 
+                              AND created_at <= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+        $stmt->execute();
 
-        // 2. Process UNPAID beats (REVERSE to market after 24 hours)
-        $stmt = $db->prepare("SELECT b.*, s.id as sale_id FROM beats b 
+        // 2. CASCADE: Process UNPAID beats (Re-offer to next bidder after 24 hours)
+        $stmt = $db->prepare("SELECT b.*, s.id as sale_id, s.cascade_chain, s.current_claimant_index 
+                              FROM beats b 
                               JOIN sales s ON b.id = s.beat_id 
                               WHERE b.status = 'sold' 
                               AND s.payment_status != 'completed' 
-                              AND b.ends_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+                              AND b.updated_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
         $stmt->execute();
         $unpaid_beats = $stmt->fetchAll();
 
         foreach ($unpaid_beats as $beat) {
             $db->beginTransaction();
             try {
-                // Reverse auction: Reset status, clear top bidder, reset timer
-                $stmt = $db->prepare("UPDATE beats SET status = 'live', top_bidder = NULL, ends_at = NULL WHERE id = ?");
-                $stmt->execute([$beat['id']]);
-                
-                // Delete the failed sale record
-                $stmt = $db->prepare("DELETE FROM sales WHERE id = ?");
-                $stmt->execute([$beat['sale_id']]);
+                $chain = json_decode($beat['cascade_chain'], true);
+                $next_index = $beat['current_claimant_index'] + 1;
 
-                // Log activity
-                $stmt = $db->prepare("INSERT INTO activity (type, beat_id, user_handle, message) VALUES ('joined', ?, 'System', ?)");
-                $msg = "Auction for " . $beat['title'] . " has been reversed to the market due to non-payment.";
-                $stmt->execute([$beat['id'], $msg]);
+                if ($chain && isset($chain[$next_index])) {
+                    // Advance Cascade
+                    $next_claimant = $chain[$next_index];
+                    $stmt = $db->prepare("UPDATE sales SET 
+                                            current_claimant_index = ?, 
+                                            winner_handle = ?, 
+                                            winner_email = ?, 
+                                            price = ?, 
+                                            plisio_invoice_id = NULL, 
+                                            plisio_invoice_url = NULL,
+                                            created_at = NOW() 
+                                          WHERE id = ?");
+                    $stmt->execute([$next_index, $next_claimant['handle'], $next_claimant['email'], $next_claimant['amount'], $beat['sale_id']]);
+                    
+                    // Update beat top bidder (for display)
+                    $stmt = $db->prepare("UPDATE beats SET top_bidder = ?, current_bid = ? WHERE id = ?");
+                    $stmt->execute([$next_claimant['handle'], $next_claimant['amount'], $beat['id']]);
 
+                    // Trigger Winning Email for the NEW claimant
+                    require_once __DIR__ . '/Email.php';
+                    $email_svc = new \BAF\Email($this->core);
+                    $email_svc->notify_win_payment($next_claimant['email'], $beat['title'], $next_claimant['amount'], $beat['delivery_id']);
+                } else {
+                    // No more bidders: Reverse to market
+                    $stmt = $db->prepare("UPDATE beats SET status = 'live', top_bidder = NULL, ends_at = NULL WHERE id = ?");
+                    $stmt->execute([$beat['id']]);
+                    $stmt = $db->prepare("DELETE FROM sales WHERE id = ?");
+                    $stmt->execute([$beat['sale_id']]);
+                }
                 $db->commit();
             } catch (\Exception $e) {
                 $db->rollBack();
@@ -161,7 +179,6 @@ class Auction {
         $db = $this->core->db();
         $now = date('Y-m-d H:i:s');
         
-        // Find live beats that have expired and have at least one bid
         $stmt = $db->prepare("SELECT * FROM beats WHERE status = 'live' AND ends_at <= ? AND top_bidder IS NOT NULL");
         $stmt->execute([$now]);
         $expired = $stmt->fetchAll();
@@ -173,32 +190,37 @@ class Auction {
                 $stmt = $db->prepare("UPDATE beats SET status = 'sold' WHERE id = ?");
                 $stmt->execute([$beat['id']]);
 
-                // Generate delivery record
+                // Generate cascade chain: highest bid per unique bidder
+                $stmt = $db->prepare("SELECT bidder_handle as handle, bidder_email as email, MAX(amount) as amount 
+                                      FROM bids WHERE beat_id = ? 
+                                      GROUP BY bidder_handle, bidder_email 
+                                      ORDER BY amount DESC");
+                $stmt->execute([$beat['id']]);
+                $chain = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                
+                $winner = $chain[0];
                 $delivery_id = 'BAF-' . strtoupper(bin2hex(random_bytes(4)));
                 $download_token = bin2hex(random_bytes(32));
-                
-                // Get winner email from latest bid
-                $stmt = $db->prepare("SELECT bidder_email FROM bids WHERE beat_id = ? ORDER BY amount DESC LIMIT 1");
-                $stmt->execute([$beat['id']]);
-                $winner_email = $stmt->fetchColumn();
-
-                $stmt = $db->prepare("INSERT INTO sales (beat_id, delivery_id, winner_handle, winner_email, price, download_token, expires_at) 
-                                      VALUES (?, ?, ?, ?, ?, ?, ?)");
-                // Download link expires in 24 hours to match file deletion
                 $expires_at = date('Y-m-d H:i:s', strtotime('+24 hours'));
-                $stmt->execute([$beat['id'], $delivery_id, $beat['top_bidder'], $winner_email, $beat['current_bid'], $download_token, $expires_at]);
+
+                $stmt = $db->prepare("INSERT INTO sales (beat_id, delivery_id, winner_handle, winner_email, price, download_token, expires_at, cascade_chain, current_claimant_index) 
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)");
+                $stmt->execute([
+                    $beat['id'], $delivery_id, $winner['handle'], $winner['email'], 
+                    $winner['amount'], $download_token, $expires_at, json_encode($chain)
+                ]);
 
                 // Log activity
                 $stmt = $db->prepare("INSERT INTO activity (type, beat_id, user_handle, amount, message) VALUES ('won', ?, ?, ?, ?)");
-                $msg = "won the auction for " . $beat['title'] . " at $" . number_format($beat['current_bid'], 2);
-                $stmt->execute([$beat['id'], $beat['top_bidder'], $beat['current_bid'], $msg]);
+                $msg = "won the auction for " . $beat['title'] . " at $" . number_format($winner['amount'], 2);
+                $stmt->execute([$beat['id'], $winner['handle'], $winner['amount'], $msg]);
 
                 $db->commit();
                 
-                // Trigger Winning Email with Payment Link
+                // Trigger Winning Email
                 require_once __DIR__ . '/Email.php';
                 $email_svc = new \BAF\Email($this->core);
-                $email_svc->notify_win_payment($winner_email, $beat['title'], $beat['current_bid'], $delivery_id);
+                $email_svc->notify_win_payment($winner['email'], $beat['title'], $winner['amount'], $delivery_id);
                 
             } catch (\Exception $e) {
                 $db->rollBack();
