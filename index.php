@@ -41,7 +41,7 @@ include __DIR__ . '/includes/header.php';
                 <div class="hero-stats">
                     <div class="stat-pill"><span class="k">Open</span><span class="v accent"><?php echo $live_count; ?></span></div>
                     <div class="stat-pill"><span class="k">Active bids</span><span class="v"><?php echo $total_bids; ?></span></div>
-                    <div class="stat-pill"><span class="k">Timer</span><span class="v">30:00 from first bid</span></div>
+                    <div class="stat-pill"><span class="k">Timer</span><span class="v">Starts on first bid</span></div>
                 </div>
 
                 <div style="margin-top: 32px; display: flex; gap: 12px;">
@@ -100,7 +100,7 @@ include __DIR__ . '/includes/header.php';
                                 </svg>
                                 <span class="status <?php echo $status; ?>"><?php echo strtoupper($status); ?></span>
                                 <span class="label"><?php echo $beat['duration']; ?></span>
-                                <button class="play" aria-label="Play" data-sample="api/serve?id=<?php echo $beat['id']; ?>">
+                                <button type="button" class="play" aria-label="Play" data-sample="api/serve?id=<?php echo $beat['id']; ?>">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                                 </button>
                             </div>
@@ -117,7 +117,7 @@ include __DIR__ . '/includes/header.php';
                                 <div class="auction-row">
                                     <div><div class="k">Current bid</div><div class="v accent">$<?php echo number_format($beat['current_bid'], 2); ?></div></div>
                                     <div><div class="k"><?php echo empty($beat['top_bidder']) ? 'Auction clock' : 'Time left'; ?></div>
-                                         <div class="v timer" data-ends="<?php echo $beat['ends_at'] ? strtotime($beat['ends_at']) : ''; ?>"><?php echo empty($beat['top_bidder']) ? '30:00' : '...'; ?></div>
+                                         <div class="v timer" data-ends="<?php echo $beat['ends_at'] ? strtotime($beat['ends_at']) : ''; ?>"><?php echo empty($beat['top_bidder']) ? 'Waiting' : '...'; ?></div>
                                     </div>
                                 </div>
                                 <div class="card-actions">
@@ -131,7 +131,7 @@ include __DIR__ . '/includes/header.php';
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($beat['status'] === 'live'): ?>
-                                        <button class="btn btn-primary open-bid" data-id="<?php echo $beat['id']; ?>" data-beat="<?php echo htmlspecialchars(json_encode($beat)); ?>">Place bid</button>
+                                        <button type="button" class="btn btn-primary open-bid" data-id="<?php echo $beat['id']; ?>" data-beat="<?php echo htmlspecialchars(json_encode($beat)); ?>">Place bid</button>
                                     <?php else: ?>
                                         <button class="btn btn-primary" disabled>SOLD</button>
                                     <?php endif; ?>
@@ -230,152 +230,3 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <?php include __DIR__ . "/includes/footer.php"; ?>
-
-<script>
-    // SSE Real-time Pulse
-    let lastActivityId = 0;
-    const evtSource = new EventSource(`api/updates.php?last_id=${lastActivityId}`);
-
-    evtSource.addEventListener('activity', (e) => {
-        const data = JSON.parse(e.data);
-        lastActivityId = data.id;
-        
-        // Update Activity Feed
-        const feed = document.getElementById('activity-list');
-        const item = document.createElement('div');
-        item.className = 'activity-item fade-in';
-        item.innerHTML = `<span class="dot"></span><span><strong>@${data.user_handle}</strong> ${data.message}</span>`;
-        feed.prepend(item);
-        if (feed.children.length > 5) feed.lastChild.remove();
-
-        // Update Beat Card & Leaderboard
-        updateBeatUI(data.beat_id, data.current_bid, data.ends_at);
-        
-        // Toast for outbid
-        if (data.type === 'bid') {
-            showToast(`New bid on ${data.title}: $${data.current_bid}`);
-        }
-    });
-
-    function updateBeatUI(id, price, endsAt) {
-        const bidElements = document.querySelectorAll(`[data-beat-id="${id}"] .amt, [data-beat-id="${id}"] .current-bid-amount`);
-        bidElements.forEach(el => {
-            el.innerText = `$${Number(price).toLocaleString()}`;
-            el.classList.add('pulse-highlight');
-            setTimeout(() => el.classList.remove('pulse-highlight'), 1000);
-        });
-        
-        const timers = document.querySelectorAll(`[data-beat-id="${id}"] [data-ends]`);
-        timers.forEach(t => t.setAttribute('data-ends', endsAt));
-    }
-
-    function showToast(msg) {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerText = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 10);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
-    // Modal Logic
-    const modal = document.getElementById('bid-modal');
-    const bidForm = document.getElementById('bid-form');
-
-    function refreshCaptcha() {
-        const a = Math.floor(Math.random() * 10) + 1;
-        const b = Math.floor(Math.random() * 10) + 1;
-        document.getElementById('captcha-label').innerText = `Security: ${a} + ${b} = ?`;
-        bidForm.dataset.ans = a + b;
-    }
-
-    document.addEventListener('click', async (e) => {
-        const lbItem = e.target.closest('.lb-item');
-        const openBidBtn = e.target.classList.contains('open-bid') ? e.target : e.target.closest('.open-bid');
-        const trigger = openBidBtn || lbItem;
-
-        if (trigger) {
-            let data = null;
-            if (trigger.classList.contains('open-bid')) {
-                data = JSON.parse(trigger.dataset.beat);
-            } else if (trigger.classList.contains('lb-item')) {
-                const btn = document.querySelector(`.open-bid[data-id="${trigger.dataset.beatId}"]`);
-                if (btn) data = JSON.parse(btn.dataset.beat);
-            }
-
-            if (data) {
-                document.getElementById('modal-beat-id').value = data.id;
-                document.getElementById('modal-beat-title').innerText = data.title;
-                
-                const minBid = Number(data.current_bid) + 5;
-                document.getElementById('modal-amount').value = minBid;
-                document.getElementById('modal-amount').min = minBid;
-                document.getElementById('min-bid-hint').innerText = `Minimum bid: $${minBid}`;
-                
-                // Fetch History
-                const historyList = document.getElementById('bid-history-list');
-                const historyContainer = document.getElementById('bid-history-container');
-                historyList.innerHTML = 'Loading history...';
-                historyContainer.style.display = 'block';
-                
-                try {
-                    const hRes = await fetch(`api/bid_history.php?id=${data.id}`);
-                    const hData = await hRes.json();
-                    if (hData.bids && hData.bids.length > 0) {
-                        historyList.innerHTML = hData.bids.map(b => `
-                            <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(0,0,0,0.05)">
-                                <span>${b.bidder_handle}</span>
-                                <span style="font-weight:700">$${Number(b.amount).toLocaleString()}</span>
-                            </div>
-                        `).join('');
-                    } else {
-                        historyList.innerHTML = '<div style="color:var(--ink-mute)">No bids yet. Start the auction!</div>';
-                    }
-                } catch (err) {
-                    historyList.innerHTML = 'Failed to load history.';
-                }
-
-                refreshCaptcha();
-                modal.classList.add('show');
-            }
-        }
-        if (e.target === modal || e.target.id === 'close-modal') {
-            modal.classList.remove('show');
-        }
-    });
-
-    bidForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const ans = bidForm.elements['captcha_ans'].value;
-        if (ans != bidForm.dataset.ans) {
-            alert("Security check failed. Please try again.");
-            refreshCaptcha();
-            return;
-        }
-
-        const formData = new FormData(bidForm);
-        const submitBtn = bidForm.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerText = "Placing...";
-
-        try {
-            const resp = await fetch('api/bid.php', { method: 'POST', body: formData });
-            const result = await resp.json();
-            if (result.success) {
-                showToast("Bid placed successfully!");
-                modal.classList.remove('show');
-                bidForm.reset();
-            } else {
-                alert(result.error || "Failed to place bid.");
-            }
-        } catch (err) {
-            alert("Connection error. Please try again.");
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerText = "Place Bid →";
-        }
-    });
-</script>

@@ -113,30 +113,29 @@ class Auction {
         $db = $this->core->db();
         
         // 1. SITE REMOVAL (24 Hours after sale)
-        // Mark as 'expired' so it disappears from the live catalog
+        // Mark completed sales as expired so they disappear from the live catalog.
         $stmt = $db->prepare("UPDATE beats b 
                               JOIN sales s ON b.id = s.beat_id 
                               SET b.status = 'expired' 
                               WHERE b.status = 'sold' 
                               AND s.payment_status = 'completed' 
-                              AND s.created_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+                              AND s.sold_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
         $stmt->execute();
 
         // 2. DOWNLOAD REVOCATION (7 Days after sale)
-        // This would involve calling Drive API to revoke permissions, 
-        // but for now we mark the sale as 'archived' so download.php rejects it.
+        // Mark long-expired completed purchases as archived so downstream download access is disabled.
         $stmt = $db->prepare("UPDATE sales SET payment_status = 'archived' 
                               WHERE payment_status = 'completed' 
-                              AND created_at <= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+                              AND sold_at <= DATE_SUB(NOW(), INTERVAL 7 DAY)");
         $stmt->execute();
 
-        // 2. CASCADE: Process UNPAID beats (Re-offer to next bidder after 24 hours)
+        // 3. UNPAID SALES: return unsold beats to market after the payment window.
         $stmt = $db->prepare("SELECT b.*, s.id as sale_id, s.cascade_chain, s.current_claimant_index 
                               FROM beats b 
                               JOIN sales s ON b.id = s.beat_id 
                               WHERE b.status = 'sold' 
                               AND s.payment_status != 'completed' 
-                              AND b.updated_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+                              AND (s.sold_at <= DATE_SUB(NOW(), INTERVAL 24 HOUR) OR (s.expires_at IS NOT NULL AND s.expires_at <= NOW()))");
         $stmt->execute();
         $unpaid_beats = $stmt->fetchAll();
 
@@ -147,31 +146,35 @@ class Auction {
                 $next_index = $beat['current_claimant_index'] + 1;
 
                 if ($chain && isset($chain[$next_index])) {
-                    // Advance Cascade
+                    // Advance cascade to the next bidder and give them a fresh payment window.
                     $next_claimant = $chain[$next_index];
+                    $next_expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+
                     $stmt = $db->prepare("UPDATE sales SET 
                                             current_claimant_index = ?, 
                                             winner_handle = ?, 
                                             winner_email = ?, 
                                             price = ?, 
                                             plisio_invoice_id = NULL, 
-                                            plisio_invoice_url = NULL,
-                                            created_at = NOW() 
+                                            plisio_invoice_url = NULL, 
+                                            expires_at = ?, 
+                                            sold_at = NOW() 
                                           WHERE id = ?");
-                    $stmt->execute([$next_index, $next_claimant['handle'], $next_claimant['email'], $next_claimant['amount'], $beat['sale_id']]);
+                    $stmt->execute([$next_index, $next_claimant['handle'], $next_claimant['email'], $next_claimant['amount'], $next_expires, $beat['sale_id']]);
                     
-                    // Update beat top bidder (for display)
+                    // Update the beat display for the replacement claimant.
                     $stmt = $db->prepare("UPDATE beats SET top_bidder = ?, current_bid = ? WHERE id = ?");
                     $stmt->execute([$next_claimant['handle'], $next_claimant['amount'], $beat['id']]);
 
-                    // Trigger Winning Email for the NEW claimant
+                    // Notify the new claimant that they now have the winning position.
                     require_once __DIR__ . '/Email.php';
                     $email_svc = new \BAF\Email($this->core);
                     $email_svc->notify_win_payment($next_claimant['email'], $beat['title'], $next_claimant['amount'], $beat['delivery_id']);
                 } else {
-                    // No more bidders: Reverse to market
-                    $stmt = $db->prepare("UPDATE beats SET status = 'live', top_bidder = NULL, ends_at = NULL WHERE id = ?");
+                    // No alternate bidder remains: reverse beat back to market.
+                    $stmt = $db->prepare("UPDATE beats SET status = 'live', top_bidder = NULL, current_bid = starting_bid, ends_at = NULL WHERE id = ?");
                     $stmt->execute([$beat['id']]);
+
                     $stmt = $db->prepare("DELETE FROM sales WHERE id = ?");
                     $stmt->execute([$beat['sale_id']]);
                 }

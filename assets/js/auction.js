@@ -79,6 +79,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const parseBeatData = (raw) => {
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (err) {
+            try {
+                const decoded = raw.replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                return JSON.parse(decoded);
+            } catch (err2) {
+                console.error('Failed to parse beat data:', err, err2, raw);
+                return null;
+            }
+        }
+    };
+
+    const openBidModal = (beat) => {
+        if (!beat || !bidModal) return;
+        playFeedbackSound('click');
+        const modalId = document.getElementById('modal-beat-id');
+        const modalAmt = document.getElementById('modal-amount');
+        const titleEl = document.getElementById('modal-beat-title');
+
+        if (modalId) modalId.value = beat.id;
+        if (modalAmt) {
+            modalAmt.min = (parseFloat(beat.current_bid) || parseFloat(beat.starting_bid)) + (beat.top_bidder ? 5 : 0);
+            modalAmt.value = modalAmt.min;
+        }
+        if (titleEl) titleEl.innerText = beat.title;
+
+        refreshCaptcha();
+        bidModal.classList.add('is-visible');
+    };
+
     let currentAudio = null;
     let audioTimer = null;
 
@@ -107,6 +140,20 @@ document.addEventListener('DOMContentLoaded', () => {
         waveContainer.innerHTML = generateWaveform(id);
     });
 
+    // Direct place-bid button binding for reliable modal opening
+    document.querySelectorAll('.open-bid').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const beat = parseBeatData(button.dataset.beat || button.getAttribute('data-beat'));
+            if (beat) {
+                openBidModal(beat);
+            } else {
+                console.error('Invalid beat payload for bid button.', button);
+            }
+        });
+    });
+
     // Event Delegation for Modal & Audio
     document.addEventListener('click', (e) => {
         const openBtn = e.target.closest('.open-bid');
@@ -116,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (trigger) {
             let beat = null;
             if (openBtn) {
-                beat = JSON.parse(openBtn.getAttribute('data-beat'));
+                beat = parseBeatData(openBtn.dataset.beat || openBtn.getAttribute('data-beat'));
             } else if (lbItem) {
                 const beatId = lbItem.getAttribute('data-beat-id');
                 const mainBtn = document.querySelector(`.card[data-id="${beatId}"] .open-bid`);
@@ -124,24 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (beat) {
-                try {
-                    playFeedbackSound('click');
-                    const modalId = document.getElementById('modal-beat-id');
-                    const modalAmt = document.getElementById('modal-amount');
-                    const titleEl = document.getElementById('modal-beat-title');
-                    
-                    if (modalId) modalId.value = beat.id;
-                    if (modalAmt) {
-                        modalAmt.min = (parseFloat(beat.current_bid) || parseFloat(beat.starting_bid)) + (beat.top_bidder ? 5 : 0);
-                        modalAmt.value = modalAmt.min;
-                    }
-                    if (titleEl) titleEl.innerText = beat.title;
-                    
-                    refreshCaptcha();
-                    bidModal.classList.add('is-visible');
-                } catch(err) {
-                    console.error("Modal init error", err);
-                }
+                openBidModal(beat);
             }
         }
 
@@ -185,14 +215,27 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.timer').forEach(el => {
             let ends = el.getAttribute('data-ends');
             if (!ends) {
-                el.innerText = "30:00";
+                el.innerText = "Waiting";
+                el.classList.remove('danger');
                 return;
             }
-            let endsTs = !isNaN(ends) && ends.length > 5 ? parseInt(ends) * 1000 : new Date(ends).getTime();
+            
+            // Parse the timestamp - could be unix seconds or datetime string
+            let endsTs;
+            if (!isNaN(ends) && ends.length > 5) {
+                // Unix timestamp in seconds
+                endsTs = parseInt(ends) * 1000;
+            } else {
+                // Datetime string like "2025-05-16 14:30:45"
+                endsTs = new Date(ends).getTime();
+            }
+            
             if (isNaN(endsTs)) {
-                el.innerText = "30:00";
+                el.innerText = "Waiting";
+                el.classList.remove('danger');
                 return;
             }
+            
             const diff = Math.max(0, Math.floor((endsTs - Date.now()) / 1000));
             if (diff <= 0) {
                 el.innerText = "CLOSED";
@@ -226,11 +269,35 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerText = "Placing...";
         
         try {
-            const res = await fetch('api/bid', { method: 'POST', body: formData });
+            const res = await fetch('/api/bid.php', { method: 'POST', body: formData });
             const data = await res.json();
             if (data.success) {
                 playFeedbackSound('bid');
                 showToast(`Bid placed successfully!`, 'ok');
+                
+                // Update timer and beat data immediately for the bidding user
+                const beatId = bidForm.elements['beat_id'].value;
+                const card = document.querySelector(`.card[data-id="${beatId}"]`);
+                if (card && data.ends_at) {
+                    const timerEl = card.querySelector('.timer');
+                    if (timerEl) {
+                        // Convert ends_at (unix timestamp in seconds) to string for data attribute
+                        const endTimestamp = typeof data.ends_at === 'string' ? data.ends_at : String(data.ends_at);
+                        timerEl.setAttribute('data-ends', endTimestamp);
+                    }
+                    
+                    // Also update the beat data on the button for next time
+                    const btn = card.querySelector('.open-bid');
+                    if (btn) {
+                        const beat = JSON.parse(btn.getAttribute('data-beat'));
+                        beat.ends_at = data.ends_at;
+                        btn.setAttribute('data-beat', JSON.stringify(beat));
+                    }
+                    
+                    // Immediately update timer display
+                    updateTimers();
+                }
+                
                 bidModal.classList.remove('is-visible');
                 bidForm.reset();
             } else {
@@ -250,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let evtSource = null;
     const startSSE = () => {
         if (evtSource) evtSource.close();
-        evtSource = new EventSource('api/updates');
+        evtSource = new EventSource('api/updates.php');
         
         evtSource.addEventListener('activity', (e) => {
             const act = JSON.parse(e.data);
