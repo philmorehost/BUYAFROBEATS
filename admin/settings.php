@@ -367,7 +367,7 @@ $status = [
             fd.append('value', value);
             fd.append('csrf_token', csrfToken);
 
-            const res = await fetch('api/save_setting.php', {
+            const res = await fetch('api/save_setting', {
                 method: 'POST',
                 body: fd
             });
@@ -406,7 +406,7 @@ $status = [
             fd.append('settings', JSON.stringify(settings));
             fd.append('csrf_token', csrfToken);
 
-            const res = await fetch('api/save_setting.php', {
+            const res = await fetch('api/save_setting', {
                 method: 'POST',
                 body: fd
             });
