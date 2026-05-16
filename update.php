@@ -56,6 +56,9 @@ $queries = [
     // Indexes for performance
     "ALTER TABLE `beats` ADD INDEX IF NOT EXISTS `idx_status_genre` (`status`, `genre`);",
     "ALTER TABLE `beats` ADD INDEX IF NOT EXISTS `idx_ends_at` (`ends_at`);",
+    "ALTER TABLE `bids` ADD INDEX IF NOT EXISTS `idx_beat_amount` (`beat_id`, `amount`);",
+    "ALTER TABLE `activity` ADD INDEX IF NOT EXISTS `idx_created` (`created_at`);",
+    "ALTER TABLE `sales` ADD INDEX IF NOT EXISTS `idx_payment` (`payment_status`);",
     
     // Sales and Activity
     "CREATE TABLE IF NOT EXISTS `activity` (

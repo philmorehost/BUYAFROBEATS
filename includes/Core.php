@@ -7,6 +7,11 @@ class Core {
     private $settings = [];
 
     private function __construct() {
+        // Performance & Stability hardening
+        ini_set('memory_limit', '256M');
+        ini_set('max_execution_time', '30');
+        if (!ob_start("ob_gzhandler")) ob_start(); 
+
         date_default_timezone_set('UTC');
         $config_file = __DIR__ . '/../config.php';
         if (!file_exists($config_file)) {
