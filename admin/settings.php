@@ -228,7 +228,7 @@ $status = [
             $has_token = !empty($core->setting('google_drive_refresh_token'));
             ?>
             <div style="background: var(--bg-2); padding: 24px; border-radius: 16px; margin-bottom: 24px; border: 1px solid var(--line);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <div>
                         <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px;"><?php echo $has_token ? 'Google Drive Connected' : 'Google Drive Not Connected'; ?></div>
                         <div style="font-size: 12px; color: var(--ink-dim);">Authenticate with Google to enable cloud uploads and file selection.</div>
@@ -237,23 +237,24 @@ $status = [
                         <a href="../api/google_drive_auth" class="btn btn-primary" style="font-size: 12px; padding: 10px 20px;">Connect →</a>
                     <?php endif; ?>
                 </div>
-                
-                <div style="padding-top: 20px; border-top: 1px dashed var(--line);">
-                    <h4 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-mute); margin-bottom: 12px;">Setup Instructions</h4>
-                    <ol style="margin: 0; padding: 0 0 0 16px; font-size: 12px; color: var(--ink-dim); line-height: 1.6;">
-                        <li style="margin-bottom: 8px;">Go to the <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--accent); font-weight:600;">Google Cloud Console</a> and create a new project.</li>
-                        <li style="margin-bottom: 8px;">Enable the <b>Google Drive API</b> for your project.</li>
-                        <li style="margin-bottom: 8px;">Go to "Credentials" → "Create Credentials" → "OAuth Client ID".</li>
-                        <li style="margin-bottom: 8px;">Select "Web Application" and add this Redirect URI:<br>
-                            <code style="background:var(--bg-3); padding:4px 8px; border-radius:4px; font-family:'JetBrains Mono'; font-size:10px; display:inline-block; margin-top:4px; color:var(--ink);">
-                                <?php 
-                                    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
-                                    echo $protocol . "://" . $_SERVER['HTTP_HOST'] . str_replace('admin/settings', 'api/google_drive_callback', explode('?', $_SERVER['REQUEST_URI'])[0]);
-                                ?>
-                            </code>
-                        </li>
-                        <li>Copy the <b>Client ID</b> and <b>Client Secret</b> below, save, and then click "Connect".</li>
-                    </ol>
+
+                <!-- Storage Help Wizard -->
+                <div style="background: color-mix(in oklab, var(--accent) 5%, var(--bg-2)); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+                    <h4 style="margin: 0 0 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent);">Step-by-Step Setup Guide</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div style="font-size: 12px; line-height: 1.6; color: var(--ink-dim);">
+                            <p style="margin-bottom: 12px;"><b style="color: var(--ink);">1. Create Project:</b><br>Visit <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--accent)">Cloud Console</a>, create a project, and enable <b>Google Drive API</b>.</p>
+                            <p style="margin-bottom: 12px;"><b style="color: var(--ink);">2. OAuth Screen:</b><br>Set user type to <b>External</b> and add your developer email.</p>
+                            <p><b style="color: var(--ink);">3. Create ID:</b><br>Go to <b>Credentials > Create > OAuth Client ID</b> (Web App).</p>
+                        </div>
+                        <div style="font-size: 12px; line-height: 1.6; color: var(--ink-dim);">
+                            <p style="margin-bottom: 12px;"><b style="color: var(--ink);">4. Redirect URI:</b><br>Copy this into Google Console:<br>
+                                <code style="display:block; background:var(--bg); padding:8px; border-radius:6px; margin:6px 0; color:var(--ink); border: 1px solid var(--line); font-family: 'JetBrains Mono'; font-size: 10px;"><?php echo $core->get_site_url(); ?>/api/google_drive_callback</code>
+                            </p>
+                            <p><b style="color: var(--ink);">5. Save & Connect:</b><br>Paste Client ID/Secret below, click <b>floating Save</b>, then click <b>Connect</b> above.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="field write-only">
