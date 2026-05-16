@@ -7,13 +7,8 @@ Options -Indexes
     Deny from all
 </FilesMatch>
 
-# Prevent script execution in uploads
-<Directory "/uploads">
-    <FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
-        Order Deny,Allow
-        Deny from all
-    </FilesMatch>
-</Directory>
+# Prevent script execution in uploads (moved to uploads/.htaccess)
+# handled by uploads/.htaccess logic
 
 # Gzip compression for performance
 <IfModule mod_deflate.c>
