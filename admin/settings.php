@@ -64,10 +64,19 @@ $status = [
         .write-only .mask-btn { position: absolute; right: 12px; top: 32px; font-size: 10px; font-weight: 700; color: var(--accent); cursor: pointer; text-transform: uppercase; }
 
         /* Floating Save Button */
-        .floating-save { position: fixed; right: 40px; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; background: var(--ok); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); cursor: pointer; z-index: 9999; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .floating-save:hover { transform: translateY(-50%) scale(1.1); box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
-        .floating-save:active { transform: translateY(-50%) scale(0.9); }
+        .floating-save-wrap { position: fixed; right: 40px; top: 50%; transform: translateY(-50%); z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .floating-save { width: 64px; height: 64px; background: var(--ok); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; }
+        .floating-save:hover { transform: scale(1.1); box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+        .floating-save.is-syncing { animation: saveGlow 1.5s infinite; pointer-events: none; opacity: 0.8; }
         .floating-save svg { width: 30px; height: 30px; }
+        .save-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--ok); text-transform: uppercase; letter-spacing: 0.1em; opacity: 0; transform: translateY(10px); transition: all 0.3s ease; }
+        .save-label.show { opacity: 1; transform: translateY(0); }
+
+        @keyframes saveGlow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 200, 150, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(0, 200, 150, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 200, 150, 0); }
+        }
 
         /* Mobile Responsiveness */
         @media (max-width: 900px) {
@@ -76,8 +85,8 @@ $status = [
             .settings-nav::-webkit-scrollbar { display: none; }
             .settings-nav a { flex-shrink: 0; white-space: nowrap; border-left: none; border-bottom: 2px solid transparent; padding: 8px 12px; font-size: 12px; }
             .settings-nav a.active { border-left: none; border-bottom-color: var(--accent); background: transparent; }
-            .floating-save { right: 16px; bottom: 20px; top: auto; transform: none; width: 54px; height: 54px; }
-            .floating-save:hover { transform: scale(1.1); }
+            .floating-save-wrap { right: 16px; bottom: 20px; top: auto; transform: none; }
+            .floating-save { width: 54px; height: 54px; }
             .floating-save svg { width: 22px; height: 22px; }
             .section { margin-bottom: 48px; }
             .section h2 { font-size: 20px; }
@@ -90,8 +99,11 @@ $status = [
 </head>
 <body>
 
-<div id="save-all-btn" class="floating-save" title="Save All Changes">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+<div class="floating-save-wrap">
+    <div id="save-all-btn" class="floating-save" title="Save All Changes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+    <div id="save-label" class="save-label">Saved</div>
 </div>
 
 <div class="topbar">
@@ -363,41 +375,43 @@ $status = [
         } catch (err) {
             console.error(err);
         } finally {
-            setTimeout(() => indicator.classList.remove('is-saving'), 500);
+            indicator.classList.remove('is-saving');
         }
     }
 
-    // Scroll Spy & Nav
-    const sections = document.querySelectorAll('.section');
-    const navLinks = document.querySelectorAll('.settings-nav a');
+    // Batch Save
+    const saveBtn = document.getElementById('save-all-btn');
+    const saveLabel = document.getElementById('save-label');
 
-    window.addEventListener('scroll', () => {
-        let current = '';
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            if (pageYOffset >= sectionTop - 150) {
-                current = section.getAttribute('id');
-            }
+    saveBtn.addEventListener('click', async () => {
+        saveBtn.classList.add('is-syncing');
+        saveLabel.classList.remove('show');
+
+        const settings = {};
+        inputs.forEach(input => {
+            settings[input.getAttribute('data-key')] = input.value;
         });
 
-        navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href').includes(current)) {
-                link.classList.add('active');
-            }
-        });
-    });
-    // Save All Button
-    document.getElementById('save-all-btn').addEventListener('click', async () => {
-        const allInputs = Array.from(inputs);
-        indicator.classList.add('is-saving');
-        
-        for (const input of allInputs) {
-            await save(input);
+        try {
+            // We'll send them one by one but with a visible "syncing" state 
+            // OR ideally we would have a batch API. For now, let's optimize the loop.
+            const promises = Object.entries(settings).map(([key, value]) => {
+                const fd = new FormData();
+                fd.append('key', key);
+                fd.append('value', value);
+                return fetch('api/save_setting.php', { method: 'POST', body: fd });
+            });
+
+            await Promise.all(promises);
+            
+            saveLabel.classList.add('show');
+            setTimeout(() => saveLabel.classList.remove('show'), 2500);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to save some settings. Please check your connection.');
+        } finally {
+            saveBtn.classList.remove('is-syncing');
         }
-        
-        indicator.classList.remove('is-saving');
-        showToast('All changes saved successfully');
     });
 
     function showToast(msg) {
