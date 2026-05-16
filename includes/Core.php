@@ -10,7 +10,7 @@ class Core {
         // Performance & Stability hardening
         ini_set('memory_limit', '256M');
         ini_set('max_execution_time', '30');
-        if (!ob_start("ob_gzhandler")) ob_start(); 
+        ob_start(); // Standard buffering to avoid zlib conflicts
 
         date_default_timezone_set('UTC');
         $config_file = __DIR__ . '/../config.php';

@@ -12,8 +12,19 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $is_admin = $core->is_admin();
-$auction = new Auction($core);
 $beats = $is_admin ? $auction->get_live_beats() : [];
+
+// Pre-fetch bid counts to avoid N+1 queries
+$bid_counts = [];
+if ($is_admin && !empty($beats)) {
+    $beat_ids = array_column($beats, 'id');
+    if (!empty($beat_ids)) {
+        $in = str_repeat('?,', count($beat_ids) - 1) . '?';
+        $stmt = $core->db()->prepare("SELECT beat_id, COUNT(*) as count FROM bids WHERE beat_id IN ($in) GROUP BY beat_id");
+        $stmt->execute($beat_ids);
+        $bid_counts = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    }
+}
 
 // Stats
 $total_rev = $core->db()->query("SELECT SUM(price) FROM sales")->fetchColumn() ?: 0;
@@ -123,7 +134,7 @@ if (isset($_GET['export']) && $is_admin) {
                         <tr>
                             <td><b><?php echo Core::escape($b['title']); ?></b> <span class="mono" style="color:var(--ink-mute); font-size:11px">· <?php echo $b['genre']; ?></span></td>
                             <td class="mono">$<?php echo number_format($b['current_bid'], 2); ?></td>
-                            <td class="mono"><?php echo $core->db()->query("SELECT COUNT(*) FROM bids WHERE beat_id = {$b['id']}")->fetchColumn(); ?></td>
+                            <td class="mono"><?php echo $bid_counts[$b['id']] ?? 0; ?></td>
                             <td class="mono" style="font-size:12px"><?php echo $b['top_bidder'] ?: '—'; ?></td>
                             <td class="mono" style="font-size:12px"><?php echo $b['ends_at'] ?: 'Not started'; ?></td>
                             <td style="text-align:right">
