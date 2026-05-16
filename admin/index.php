@@ -13,6 +13,11 @@ if (!isset($_SESSION['user_id'])) {
 
 $is_admin = $core->is_admin();
 $auction = new Auction($core);
+
+// Ensure auctions are processed when users visit the dashboard
+$auction->check_for_winners();
+$auction->cleanup_sold_beats();
+
 $beats = $is_admin ? $auction->get_live_beats() : [];
 
 // Pre-fetch bid counts to avoid N+1 queries
@@ -239,14 +244,28 @@ if (isset($_GET['export']) && $is_admin) {
                                 <td class="mono">$<?php echo number_format($b['amount'], 2); ?></td>
                                 <td class="mono">$<?php echo number_format($b['beat_current_bid'], 2); ?></td>
                                 <td>
-                                    <?php if ($is_live): ?>
+                                    <?php if ($is_live): 
+                                        $is_ended = ($b['ends_at'] && strtotime($b['ends_at']) <= time());
+                                    ?>
                                         <?php if ($is_top): ?>
-                                            <span style="color:var(--accent); font-weight:bold; font-size:11px;">★ TOP BIDDER</span>
+                                            <?php if ($is_ended): ?>
+                                                <span style="color:var(--accent); font-weight:bold; font-size:11px;">♛ PENDING WIN</span>
+                                            <?php else: ?>
+                                                <span style="color:var(--accent); font-weight:bold; font-size:11px;">★ TOP BIDDER</span>
+                                            <?php endif; ?>
                                         <?php else: ?>
-                                            <span style="color:var(--danger); font-size:11px;">OUTBID</span>
+                                            <?php if ($is_ended): ?>
+                                                <span style="color:var(--ink-mute); font-size:11px;">AUCTION ENDED</span>
+                                            <?php else: ?>
+                                                <span style="color:var(--danger); font-size:11px;">OUTBID</span>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     <?php else: ?>
-                                        <span style="color:var(--ink-mute); font-size:11px;">ENDED</span>
+                                        <?php if ($b['beat_status'] === 'sold' && $is_top): ?>
+                                            <span style="color:var(--accent); font-weight:bold; font-size:11px;">✔ WON</span>
+                                        <?php else: ?>
+                                            <span style="color:var(--ink-mute); font-size:11px;">ENDED</span>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                                 <td style="text-align:right">
