@@ -131,7 +131,7 @@ include __DIR__ . '/includes/header.php';
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($beat['status'] === 'live'): ?>
-                                        <button class="btn btn-primary open-bid" data-beat='<?php echo json_encode($beat); ?>'>Place bid</button>
+                                        <button class="btn btn-primary open-bid" data-beat="<?php echo htmlspecialchars(json_encode($beat)); ?>">Place bid</button>
                                     <?php else: ?>
                                         <button class="btn btn-primary" disabled>SOLD</button>
                                     <?php endif; ?>
