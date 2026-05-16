@@ -95,10 +95,18 @@ class GoogleDrive {
     }
 
     /**
-     * Gets or refreshes the OAuth access token.
+     * Gets or refreshes the OAuth access token with file-based caching.
      */
-    private function get_access_token() {
+    public function get_access_token() {
         if (!$this->client_id || !$this->client_secret || !$this->refresh_token) return false;
+
+        $cache_file = __DIR__ . '/../scratch/gd_token.json';
+        if (file_exists($cache_file)) {
+            $cache = json_decode(file_get_contents($cache_file), true);
+            if ($cache && isset($cache['token']) && isset($cache['expires']) && $cache['expires'] > time() + 60) {
+                return $cache['token'];
+            }
+        }
 
         $ch = curl_init('https://oauth2.googleapis.com/token');
         curl_setopt($ch, CURLOPT_POST, true);
@@ -109,12 +117,22 @@ class GoogleDrive {
             'grant_type' => 'refresh_token'
         ]));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         
         $response = curl_exec($ch);
         curl_close($ch);
 
         $result = json_decode($response, true);
-        return $result['access_token'] ?? false;
+        if (isset($result['access_token'])) {
+            $expires_in = $result['expires_in'] ?? 3600;
+            file_put_contents($cache_file, json_encode([
+                'token' => $result['access_token'],
+                'expires' => time() + $expires_in
+            ]));
+            return $result['access_token'];
+        }
+
+        return false;
     }
 
     /**

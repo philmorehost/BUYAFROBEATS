@@ -124,14 +124,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (beat) {
-                playFeedbackSound('click');
-                document.getElementById('modal-beat-id').value = beat.id;
-                document.getElementById('modal-amount').min = (parseFloat(beat.current_bid) || parseFloat(beat.starting_bid)) + (beat.top_bidder ? 5 : 0);
-                document.getElementById('modal-amount').value = document.getElementById('modal-amount').min;
-                const titleEl = document.getElementById('modal-beat-title');
-                if (titleEl) titleEl.innerText = beat.title;
-                refreshCaptcha();
-                bidModal.classList.add('is-visible');
+                try {
+                    playFeedbackSound('click');
+                    const modalId = document.getElementById('modal-beat-id');
+                    const modalAmt = document.getElementById('modal-amount');
+                    const titleEl = document.getElementById('modal-beat-title');
+                    
+                    if (modalId) modalId.value = beat.id;
+                    if (modalAmt) {
+                        modalAmt.min = (parseFloat(beat.current_bid) || parseFloat(beat.starting_bid)) + (beat.top_bidder ? 5 : 0);
+                        modalAmt.value = modalAmt.min;
+                    }
+                    if (titleEl) titleEl.innerText = beat.title;
+                    
+                    refreshCaptcha();
+                    bidModal.classList.add('is-visible');
+                } catch(err) {
+                    console.error("Modal init error", err);
+                }
             }
         }
 
