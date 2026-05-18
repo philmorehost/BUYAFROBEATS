@@ -49,5 +49,5 @@ $stmt = $db->prepare("INSERT INTO settings (`key`, `value`) VALUES ('google_driv
 $stmt->execute([$token_data['refresh_token'], $token_data['refresh_token']]);
 
 // 4. Redirect back to settings
-header("Location: ../admin/settings?success=1#storage");
+header("Location: " . $core->get_site_url() . "/admin/settings?success=1#storage");
 exit;

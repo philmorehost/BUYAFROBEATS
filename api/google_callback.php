@@ -80,5 +80,5 @@ $_SESSION['user_role'] = $user['role'];
 $_SESSION['username'] = $user['username'];
 $_SESSION['user_email'] = $user['email'];
 
-header('Location: ../admin/index');
+header('Location: ' . $core->get_site_url() . '/admin/index');
 exit;
