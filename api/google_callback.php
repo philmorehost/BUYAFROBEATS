@@ -18,7 +18,7 @@ if (!$client_id || !$client_secret) {
 }
 
 // 2. Exchange code for access token
-$redirect_uri = $core->get_site_url() . '/api/google_callback.php';
+$redirect_uri = $core->get_site_url() . '/api/google_callback';
 
 $ch = curl_init('https://oauth2.googleapis.com/token');
 curl_setopt($ch, CURLOPT_POST, true);
