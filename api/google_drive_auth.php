@@ -14,9 +14,7 @@ if (!$client_id) {
     die("Please enter your Google Drive Client ID in settings first.");
 }
 
-$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-$redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/google_drive_callback';
+$redirect_uri = $core->get_site_url() . '/api/google_drive_callback';
 
 $params = [
     'client_id' => $client_id,

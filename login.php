@@ -76,9 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php
         $google_id = $core->setting('google_client_id');
         if ($google_id):
-            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-            $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-            $redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/api/google_callback.php';
+            $redirect_uri = $core->get_site_url() . '/api/google_callback.php';
             $google_url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
                 'client_id' => $google_id,
                 'redirect_uri' => $redirect_uri,

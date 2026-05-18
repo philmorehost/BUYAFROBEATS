@@ -22,9 +22,7 @@ if (!$client_id || !$client_secret) {
 }
 
 // 2. Exchange code for tokens
-$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-$redirect_uri = $protocol . "://" . $_SERVER['HTTP_HOST'] . $base_path . '/google_drive_callback';
+$redirect_uri = $core->get_site_url() . '/api/google_drive_callback';
 
 $ch = curl_init('https://oauth2.googleapis.com/token');
 curl_setopt($ch, CURLOPT_POST, true);

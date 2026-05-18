@@ -198,7 +198,10 @@ class Core {
     }
 
     public function get_site_url() {
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+        $is_https = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || 
+                    (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || 
+                    (isset($_SERVER['HTTP_FRONT_END_HTTPS']) && $_SERVER['HTTP_FRONT_END_HTTPS'] === 'on');
+        $protocol = $is_https ? "https" : "http";
         $host = $_SERVER['HTTP_HOST'];
         
         // Calculate the base path relative to this file (which is in /includes/)
